@@ -45,10 +45,36 @@ class Step {
 }
 
 $(function(){
-	var stream_step = new Step();
-	stream_step.show();
+	var tournament_body = $('.tournaments.tournaments-show');
+	if(tournament_body.length > 0){
 
-	var open_matches = $('.match.-open');
+		var tournament_id = window.location.pathname.replace(/^\/+/g, '');
+		var username = "";
+		var key = "";
 
-	console.log("Number of open matches: "+open_matches.length);
+		chrome.storage.sync.get('user', function(data) {
+			username = data.user;
+		});
+
+		chrome.storage.sync.get('key', function(data) {
+			key = data.key;
+		});
+
+		console.log(tournament_id);
+
+		var open_matches = $('.match.-open');
+
+		console.log("Number of open matches: "+open_matches.length);
+
+		if(open_matches.length > 0){
+			var stream_step = new Step();
+			stream_step.show();
+		}
+		else{
+			console.log("tournament has not started, finished, or something is wrong.")
+		}
+	}
+	else{
+		console.log("not a tournament page.");
+	}
 });

@@ -1,16 +1,40 @@
 <!DOCTYPE html>
-  <html>
-    <head>
-      <style>
-        button {
-          height: 30px;
-          width: 30px;
-          outline: none;
+<html>
+<head>
+    <style>
+        body {
+            min-width: 420px;
+            overflow-x: hidden;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
         }
-      </style>
-    </head>
-    <body>
-      <button id="changeColor"></button>
-      <script src="popup.js"></script>
-    </body>
-  </html>
+        input, textarea {
+            width: 420px;
+        }
+        input#save {
+            font-weight: bold; width: auto;
+        }
+        p#message {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <p id="message"></p>
+    <form id="setkey">
+        <p>
+            <label for="user">Challonge Username</label><br />
+            <input type="text" id="user" name="user" size="50" value="" />
+        </p>
+        <p>
+            <label for="key">API Key</label><br />
+            <input type="password" id="key" name="key" size="50" value="" />
+        </p>
+        <p>
+            <input id="save" type="submit" value="Save API Key Locally" />
+            <span id="status-display"></span>
+        </p>
+    </form>
+    <script src="popup.js"></script>
+</body>
+</html>

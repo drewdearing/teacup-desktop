@@ -1,16 +1,23 @@
-let changeColor = document.getElementById('changeColor');
+let userField = document.getElementById('user');
+let keyField = document.getElementById('key');
+let form = document.getElementById('setkey');
+let save = document.getElementById('save');
 
-chrome.storage.sync.get('color', function(data) {
-	changeColor.style.backgroundColor = data.color;
-	changeColor.setAttribute('value', data.color);
+chrome.storage.sync.get('user', function(data) {
+	userField.value = data.user;
 });
 
-changeColor.onclick = function(element) {
-	let color = element.target.value;
-	chrome.tabs.executeScript(
-		null,
-		{code: 'document.body.style.backgroundColor = "' + color + '";'});
-	chrome.tabs.executeScript(
-		null,
-		{code: 'console.log("hi");'});
+chrome.storage.sync.get('key', function(data) {
+	keyField.value = data.key;
+});
+
+userField.onchange = function(){
+};
+
+keyField.onchange = function(){
+};
+
+form.onsubmit = function(){
+	chrome.storage.sync.set({user: userField.value, key: keyField.value}, function() {});
+	window.close();
 };
