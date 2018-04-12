@@ -60,6 +60,58 @@ function matchListsNotEqual(list1, list2){
 	return false;
 }
 
+var match_dictionary = null;
+
+function initMatchDictionary(){
+	var matches = $('.match');
+	var dict = {
+		total_matches: 0,
+		num_open_matches: 0,
+		match_objects: []
+	};
+	for(let i = 0; i < matches.length; i++){
+		var match = matches.eq(i);
+		var match_id = match.attr("data-match-id");
+		var match_open = match.hasClass("-open");
+		if(match_open){
+			dict.num_open_matches += 1;
+		}
+		dict.total_matches += 1;
+		var match_obj = {
+			element: match,
+			match_id: match_id,
+			open: match_open
+		}
+		dict.match_objects.push(match_obj);
+	}
+
+	match_dictionary = dict;
+}
+
+function checkMatchUpdate(){
+	if(match_dictionary != null){
+		var changed = false;
+		for(let i = 0; i < match_dictionary.match_objects.length; i++){
+			var match_obj = match_dictionary.match_objects[i];
+			if(match_obj.open && !match_obj.element.hasClass("-open")){
+				changed = true;
+				match_obj.open = false;
+				match_dictionary.num_open_matches -= 1;
+			}
+			else if(!match_obj.open && match_obj.element.hasClass("-open")){
+				changed = true;
+				match_obj.open = true;
+				match_dictionary.num_open_matches += 1;
+			}
+		}
+		return changed;
+	}
+	else{
+		console.log("dict is null");
+		return false;
+	}
+}
+
 $(function(){
 	var tournament_body = $('.tournaments.tournaments-show');
 	if(tournament_body.length > 0){
@@ -81,16 +133,14 @@ $(function(){
 			console.log("changed.")
 		});
 
-		var open_matches = $('.match.-open');
+		initMatchDictionary();
 
-		if(open_matches.length > 0){
+		if(match_dictionary.num_open_matches > 0){
 			var stream_step = new Step();
 			stream_step.show();
 			var refreshUI = setInterval(function() {
-				var curr_open = $('.match.-open');
-				if (curr_open.length > 0) {
-					if(matchListsNotEqual(open_matches, curr_open)){
-						open_matches = curr_open;
+				if (match_dictionary.num_open_matches > 0) {
+					if(checkMatchUpdate()){
 						console.log("bracket updated");
 					}
 				}
