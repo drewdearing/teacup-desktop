@@ -8,7 +8,7 @@
 	},
 	"content_scripts": [{
 		"css": ["styles.css"],
-		"js": ["content.js"],
+		"js": ["jquery-3.3.1.min.js","content.js"],
 		"matches": ["https://challonge.com/*"]
 	}],
 	"permissions": ["activeTab", "declarativeContent", "storage"],
