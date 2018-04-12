@@ -44,22 +44,6 @@ class Step {
 	}
 }
 
-function matchListsNotEqual(list1, list2){
-	if(list1.length != list2.length){
-		console.log("lists not equal size");
-		return true;
-	}
-	for(let i = 0; i < list1.length; i++){
-		var id1 = list1.eq(i).attr("data-match-id");
-		var id2 = list1.eq(i).attr("data-match-id");
-		if(id1 != id2){
-			console.log("ids do not match");
-			return true;
-		}
-	}
-	return false;
-}
-
 var match_dictionary = null;
 
 function initMatchDictionary(){
@@ -135,25 +119,13 @@ $(function(){
 
 		initMatchDictionary();
 
-		if(match_dictionary.num_open_matches > 0){
-			var stream_step = new Step();
-			stream_step.show();
-			var refreshUI = setInterval(function() {
-				if (match_dictionary.num_open_matches > 0) {
-					if(checkMatchUpdate()){
-						console.log("bracket updated");
-					}
-				}
-				else{
-					stream_step.hide();
-					console.log("tournament over");
-					clearInterval(refreshUI)
-				}
-			}, 1000);
-		}
-		else{
-			console.log("tournament has not started, finished, or something is wrong.")
-		}
+		var stream_step = new Step();
+		stream_step.show();
+		var refreshUI = setInterval(function() {
+			if(checkMatchUpdate()){
+				console.log("bracket updated");
+			}
+		}, 1000);
 	}
 	else{
 		console.log("not a tournament page.");
