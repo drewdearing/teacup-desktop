@@ -44,11 +44,28 @@ class Step {
 	}
 }
 
+function matchListsNotEqual(list1, list2){
+	if(list1.length != list2.length){
+		console.log("lists not equal size");
+		return true;
+	}
+	for(let i = 0; i < list1.length; i++){
+		var id1 = list1.eq(i).attr("data-match-id");
+		var id2 = list1.eq(i).attr("data-match-id");
+		if(id1 != id2){
+			console.log("ids do not match");
+			return true;
+		}
+	}
+	return false;
+}
+
 $(function(){
 	var tournament_body = $('.tournaments.tournaments-show');
 	if(tournament_body.length > 0){
 
 		var tournament_id = window.location.pathname.replace(/^\/+/g, '');
+		console.log("tournament_id: "+tournament_id);
 		var username = "";
 		var key = "";
 
@@ -60,15 +77,29 @@ $(function(){
 			key = data.key;
 		});
 
-		console.log(tournament_id);
+		$( ".match" ).change(function() {
+			console.log("changed.")
+		});
 
 		var open_matches = $('.match.-open');
-
-		console.log("Number of open matches: "+open_matches.length);
 
 		if(open_matches.length > 0){
 			var stream_step = new Step();
 			stream_step.show();
+			var refreshUI = setInterval(function() {
+				var curr_open = $('.match.-open');
+				if (curr_open.length > 0) {
+					if(matchListsNotEqual(open_matches, curr_open)){
+						open_matches = curr_open;
+						console.log("bracket updated");
+					}
+				}
+				else{
+					stream_step.hide();
+					console.log("tournament over");
+					clearInterval(refreshUI)
+				}
+			}, 1000);
 		}
 		else{
 			console.log("tournament has not started, finished, or something is wrong.")
