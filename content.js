@@ -1,3 +1,9 @@
+var TourneyState = Object.freeze({"pending": 0, "underway": 1, "complete": 2});
+var MatchState = Object.freeze({"pending": 0, "open": 1, "complete": 2});
+var match_dictionary = null;
+var tournament_state = TourneyState.underway;
+var tournament_owner = true;
+
 class Step {
 	constructor(icon = "fa-play-circle"){
 		this.hidden = true;
@@ -44,29 +50,103 @@ class Step {
 	}
 }
 
-var match_dictionary = null;
+class Match {
+
+	constructor(match){
+		this.element = match;
+		this.match_id = this.element.attr("data-match-id");
+		this.state = this.getState();
+		this.hover = false;
+		this.setOnHover();
+	}
+
+	setOnHover(){
+		var id = this.match_id;
+		var state = this.state;
+		this.element.hover(
+			this.getOnHover($(this), true),
+			this.getOnHover($(this), false)
+		);
+	}
+
+	getState(){
+		return Match.getMatchState(this.element);
+	}
+
+	static getMatchState(element){
+		if(element.hasClass("-pending")){
+			return MatchState.pending;
+		}
+		if(element.hasClass("-open")){
+			return MatchState.open;
+		}		
+		if(element.hasClass("-complete")){
+			return MatchState.complete;
+		}
+	}
+
+	getOnHover(match, onHover){
+		var self = match.get(0);
+		if(onHover){
+			return function(){
+				var extension = Snap(self.element.get(0)).select(".match-extension");
+				var texts = extension.selectAll(".match--fa-icon");
+				var background = extension.select(".match--menu-wrapper");
+				var state = self.state;
+				var id = self.match_id;
+				if(!self.hover){
+					if(state == MatchState.open){
+						var curr_width = eval(background.attr("width"));
+						background.attr({width: curr_width + 30});
+
+						texts.forEach( function(text){
+							var curr_x = eval(text.attr("x"));
+							text.attr({x: curr_x + 30});
+						});
+
+						var stream_icon = extension.text(25, 30, "");
+						stream_icon.addClass("match--fa-icon");
+						stream_icon.attr({
+								width: 21,
+								height: 25,
+								"text-anchor":"middle",
+								"data-tooltip":"Add Match to Stream"
+						});
+					}
+					self.hover = true;
+				}
+				else{
+					if(state == MatchState.open){
+						console.log(texts);
+						texts.forEach(function(text){
+							var curr_tip = text.attr("data-tooltip");
+							if(curr_tip == "Unmark as In Progress" || curr_tip == "Mark as In Progress"){
+								var curr_x = eval(text.attr("x"));
+								text.attr({x: curr_x + 30});
+							}
+						});
+					}
+				}
+			}
+		}
+		else{
+			return function(){
+				self.hover = false;
+			}
+		}
+	}
+}
 
 function initMatchDictionary(){
 	var matches = $('.match');
 	var dict = {
 		total_matches: 0,
-		num_open_matches: 0,
 		match_objects: []
 	};
 	for(let i = 0; i < matches.length; i++){
-		var match = matches.eq(i);
-		var match_id = match.attr("data-match-id");
-		var match_open = match.hasClass("-open");
-		if(match_open){
-			dict.num_open_matches += 1;
-		}
-		dict.total_matches += 1;
-		var match_obj = {
-			element: match,
-			match_id: match_id,
-			open: match_open
-		}
-		dict.match_objects.push(match_obj);
+		var match = new Match(matches.eq(i));
+		dict.total_matches++;
+		dict.match_objects.push(match);
 	}
 
 	match_dictionary = dict;
@@ -77,15 +157,9 @@ function checkMatchUpdate(){
 		var changed = false;
 		for(let i = 0; i < match_dictionary.match_objects.length; i++){
 			var match_obj = match_dictionary.match_objects[i];
-			if(match_obj.open && !match_obj.element.hasClass("-open")){
+			if(match_obj.state != match_obj.getState()){
 				changed = true;
-				match_obj.open = false;
-				match_dictionary.num_open_matches -= 1;
-			}
-			else if(!match_obj.open && match_obj.element.hasClass("-open")){
-				changed = true;
-				match_obj.open = true;
-				match_dictionary.num_open_matches += 1;
+				match_obj.state = match_obj.getState();
 			}
 		}
 		return changed;
