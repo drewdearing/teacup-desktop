@@ -11,7 +11,7 @@
 		"js": ["jquery-3.3.1.min.js", "snap.svg-min.js", "content.js"],
 		"matches": ["https://challonge.com/*"]
 	}],
-	"permissions": ["activeTab", "declarativeContent", "storage"],
+	"permissions": ["activeTab", "declarativeContent", "storage", "<all_urls>"],
 	"page_action": {
 		"default_popup": "popup.html",
 		"default_icon": {
