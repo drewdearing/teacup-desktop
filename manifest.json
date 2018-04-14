@@ -8,7 +8,7 @@
 	},
 	"content_scripts": [{
 		"css": ["styles.css"],
-		"js": ["jquery-3.3.1.min.js", "snap.svg-min.js", "content.js"],
+		"js": ["jquery-3.3.1.min.js", "snap.svg-min.js", "api_manager.js", "content.js"],
 		"matches": ["https://challonge.com/*"]
 	}],
 	"permissions": ["activeTab", "declarativeContent", "storage", "<all_urls>"],
@@ -20,6 +20,10 @@
         "48": "images/get_started48.png",
         "128": "images/get_started128.png"
     	}
+	},
+	"options_ui": {
+		"page": "options.html",
+		"chrome_style": true
 	},
 	"icons": {
       "16": "images/get_started16.png",

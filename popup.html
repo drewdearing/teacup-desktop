@@ -3,38 +3,16 @@
 <head>
     <style>
         body {
-            min-width: 420px;
-            overflow-x: hidden;
+            min-width: 200px;
             font-family: Arial, sans-serif;
             font-size: 12px;
         }
-        input, textarea {
-            width: 420px;
-        }
-        input#save {
-            font-weight: bold; width: auto;
-        }
         p#message {
-            color: red;
+            white-space: nowrap;
         }
     </style>
 </head>
 <body>
-    <p id="message"></p>
-    <form id="setkey">
-        <p>
-            <label for="user">Challonge Username</label><br />
-            <input type="text" id="user" name="user" size="50" value="" />
-        </p>
-        <p>
-            <label for="key">API Key</label><br />
-            <input type="password" id="key" name="key" size="50" value="" />
-        </p>
-        <p>
-            <input id="save" type="submit" value="Save API Key Locally" />
-            <span id="status-display"></span>
-        </p>
-    </form>
-    <script src="popup.js"></script>
+        <script src="popup.js"></script>
 </body>
 </html>

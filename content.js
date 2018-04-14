@@ -1,8 +1,6 @@
-var TourneyState = Object.freeze({"pending": 0, "underway": 1, "complete": 2});
-var MatchState = Object.freeze({"pending": 0, "open": 1, "complete": 2});
 var match_dictionary = null;
-var tournament_state = TourneyState.underway;
-var tournament_owner = true;
+var api_manager = null;
+var service_enabled = true;
 
 class Step {
 	constructor(icon = "fa-play-circle"){
@@ -137,24 +135,24 @@ class Match {
 	}
 }
 
-function initMatchDictionary(){
-	var matches = $('.match');
-	var dict = {
-		total_matches: 0,
-		match_objects: []
-	};
-	for(let i = 0; i < matches.length; i++){
-		var match = new Match(matches.eq(i));
-		dict.total_matches++;
-		dict.match_objects.push(match);
+class MatchDictionary {
+	
+	constructor(){
+		var matches = $('.match');
+		this.match_dictionary = {
+			total_matches: 0,
+			match_objects: []
+		};
+		for(let i = 0; i < matches.length; i++){
+			var match = new Match(matches.eq(i));
+			this.match_dictionary.total_matches++;
+			this.match_dictionary.match_objects.push(match);
+		}
 	}
 
-	match_dictionary = dict;
-}
-
-function checkMatchUpdate(){
-	if(match_dictionary != null){
+	checkMatchUpdate(){
 		var changed = false;
+		var match_dictionary = this.match_dictionary;
 		for(let i = 0; i < match_dictionary.match_objects.length; i++){
 			var match_obj = match_dictionary.match_objects[i];
 			if(match_obj.state != match_obj.getState()){
@@ -164,10 +162,19 @@ function checkMatchUpdate(){
 		}
 		return changed;
 	}
-	else{
-		console.log("dict is null");
-		return false;
-	}
+}
+
+function start_service(tournament_data){
+	console.log(tournament_data);
+	match_dictionary = new MatchDictionary();
+	var stream_step = new Step();
+	stream_step.updateBody("Welcome to StreamAssist.");
+	stream_step.show();
+	var refreshUI = setInterval(function() {
+		if(match_dictionary.checkMatchUpdate()){
+			console.log("bracket updated");
+		}
+	}, 1000);
 }
 
 $(function(){
@@ -176,30 +183,10 @@ $(function(){
 
 		var tournament_id = window.location.pathname.replace(/^\/+/g, '');
 		console.log("tournament_id: "+tournament_id);
-		var username = "";
-		var key = "";
 
-		chrome.storage.sync.get('user', function(data) {
-			username = data.user;
-		});
-
-		chrome.storage.sync.get('key', function(data) {
-			key = data.key;
-		});
-
-		$( ".match" ).change(function() {
-			console.log("changed.")
-		});
-
-		initMatchDictionary();
-
-		var stream_step = new Step();
-		stream_step.show();
-		var refreshUI = setInterval(function() {
-			if(checkMatchUpdate()){
-				console.log("bracket updated");
-			}
-		}, 1000);
+		api_manager = new APIManager(tournament_id);
+		APIManager.initAuth(api_manager, start_service);
+		
 	}
 	else{
 		console.log("not a tournament page.");
