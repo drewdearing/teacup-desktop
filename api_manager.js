@@ -84,7 +84,7 @@ class APIManager {
 
 	onSuccessfulMatches(callback) {
 		return function(data) {
-			console.log(data);
+			
 			callback("ss");
 		}
 	}
