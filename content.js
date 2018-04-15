@@ -137,8 +137,8 @@ class Match {
 
 class MatchDictionary {
 	
-	constructor(){
-		var matches = $('.match');
+	constructor(response_data){
+		self.matches = []
 		this.match_dictionary = {
 			total_matches: 0,
 			match_objects: []
@@ -164,9 +164,7 @@ class MatchDictionary {
 	}
 }
 
-function start_service(tournament_data){
-	console.log(tournament_data);
-	match_dictionary = new MatchDictionary();
+function onGetMatches(matches, data){
 	var stream_step = new Step();
 	stream_step.updateBody("Welcome to StreamAssist.");
 	stream_step.show();
@@ -177,6 +175,11 @@ function start_service(tournament_data){
 	}, 1000);
 }
 
+function start_service(api_manager, tournament_data){
+	console.log(tournament_data);
+	api_manager.getMatches(onGetMatches);
+}
+
 $(function(){
 	var tournament_body = $('.tournaments.tournaments-show');
 	if(tournament_body.length > 0){
@@ -185,8 +188,7 @@ $(function(){
 		console.log("tournament_id: "+tournament_id);
 
 		api_manager = new APIManager(tournament_id);
-		APIManager.initAuth(api_manager, start_service);
-		
+		api_manager.initAuth(start_service);
 	}
 	else{
 		console.log("not a tournament page.");
