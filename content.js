@@ -164,8 +164,7 @@ class MatchDictionary {
 	}
 }
 
-function start_service(tournament_data){
-	console.log(tournament_data);
+function start_service(){
 	match_dictionary = new MatchDictionary();
 	var stream_step = new Step();
 	stream_step.updateBody("Welcome to StreamAssist.");
@@ -185,7 +184,7 @@ $(function(){
 		console.log("tournament_id: "+tournament_id);
 
 		api_manager = new APIManager(tournament_id);
-		APIManager.initAuth(api_manager, start_service);
+		api_manager.initAuth(start_service);
 		
 	}
 	else{
