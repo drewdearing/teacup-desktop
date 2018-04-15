@@ -20,8 +20,17 @@ class APIManager {
 			APIManager.retrieveKey(manager, function(){
 				manager.testAuth(function(data, textStatus, jqXHR){
 					console.log("success auth");
-					console.log(data);
 					manager.is_authenticated = true;
+					$.each(data, function(index, tournament_obj){
+						console.log(tournament_obj.tournament.id + " " + manager.tournament_id);
+						if(tournament_obj.tournament.id == manager.tournament_id){
+							manager.is_owner = true;
+							return false;
+							//this will not work because id is not the same thing as URL code.
+							//need a second api call to retrieve the tournament object by url code.
+							//and then compare.
+						}
+					});
 					callback();
 				},
 				function(jqXHR, textStatus, errorThrown, loginAttempt){
@@ -41,7 +50,7 @@ class APIManager {
 
 	testAuth(success, fail){
 		if(this.user != "" && this.key != ""){
-			var api_url = "https://"+this.user+":"+this.key+"@api.challonge.com/v1/tournaments/"+ this.tournament_id +".json";
+			var api_url = "https://"+this.user+":"+this.key+"@api.challonge.com/v1/tournaments.json";
 			console.log(api_url);
 			APIManager.request({
 				url: api_url,
@@ -59,6 +68,8 @@ class APIManager {
 			fail(null, null, null, false);
 		}
 	}
+
+
 
 	static retrieveUser(manager, callback){
     	chrome.storage.sync.get('user', function (data) {
@@ -78,7 +89,4 @@ class APIManager {
 		$.ajax(settings);
 	}
 
-	authenticated(){
-		return this.is_authenticated;
-	}
 }

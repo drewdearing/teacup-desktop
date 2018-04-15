@@ -165,6 +165,7 @@ class MatchDictionary {
 }
 
 function start_service(){
+	console.log(api_manager.is_authenticated +" " + api_manager.is_owner);
 	match_dictionary = new MatchDictionary();
 	var stream_step = new Step();
 	stream_step.updateBody("Welcome to StreamAssist.");
