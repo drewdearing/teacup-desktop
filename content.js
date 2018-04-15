@@ -164,20 +164,25 @@ class MatchDictionary {
 	}
 }
 
-function onGetMatches(matches, data){
+function onGetMatches(data){
+	console.log("new matches data: ")
+	console.log(data)
+
+	/*
 	var stream_step = new Step();
 	stream_step.updateBody("Welcome to StreamAssist.");
-	stream_step.show();
-	var refreshUI = setInterval(function() {
-		if(match_dictionary.checkMatchUpdate()){
-			console.log("bracket updated");
-		}
-	}, 1000);
+	stream_step.show();*/
 }
 
-function start_service(api_manager, tournament_data){
-	console.log(tournament_data);
-	api_manager.getMatches(onGetMatches);
+function start_service(api_manager){
+	console.log(api_manager.initialization_data)
+	console.log(api_manager.is_authenticated + " " + api_manager.is_owner);
+	var refreshUI = setInterval(function() {
+/*		if(match_dictionary.checkMatchUpdate()){
+			console.log("bracket updated");
+		}*/
+		api_manager.getMatches(onGetMatches);
+	}, 1000);
 }
 
 $(function(){
@@ -188,7 +193,7 @@ $(function(){
 		console.log("tournament_id: "+tournament_id);
 
 		api_manager = new APIManager(tournament_id);
-		api_manager.initAuth(start_service);
+		api_manager.initialize(start_service);
 	}
 	else{
 		console.log("not a tournament page.");

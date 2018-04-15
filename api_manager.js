@@ -9,6 +9,8 @@ class APIManager {
 	constructor(tournament_id){
 		this.tournament_id = tournament_id;
 		this.is_owner = false;
+		this.authentication_data = ""
+		this.on_success_callback = ""
 		this.is_authenticated = false;
 		this.user = "";
 		this.key = "";
@@ -19,23 +21,41 @@ class APIManager {
 		$.ajax(settings);
 	}
 
-	initAuth(callback){
-		this._retrieveUser(callback);
+	initialize(callback){
+		this.on_success_callback = callback
+		this.initAuth()
 	}
 
-	_retrieveUser(callback){
-		self = this
+	setIsOwner() {
+		$.each(this.authentication_data, function(index, tournament_obj){
+			console.log(tournament_obj.tournament.id + " " + this.tournament_id);
+			if(tournament_obj.tournament.id == this.tournament_id){
+				this.is_owner = true;
+				return false;
+				//this will not work because id is not the same thing as URL code.
+				//need a second api call to retrieve the tournament object by url code.
+				//and then compare.
+			}
+		});
+	}
+
+	initAuth(){
+		this.retrieveUser();
+	}
+
+	retrieveUser(){
+		var self = this
     	chrome.storage.sync.get('user', function (data) {
         	self.user = data.user;
-        	self._retrieveKey(callback);
+        	self.retrieveKey();
     	});
 	}
 
-	_retrieveKey(callback){
-		self = this
+	retrieveKey(){
+		var self = this
 		chrome.storage.sync.get('key', function (data) {
         	self.key = data.key;
-        	self.testAuth(callback);
+        	self.testAuth();
     	});
 	}
 
@@ -46,58 +66,56 @@ class APIManager {
 		});
 	}
 
-	successAuth(callback){
-		console.log("success auth");
-		self = this
-		self.is_authenticated = true;
-		return function(data){
-			callback(self, data);
+	successAuth(self){
+		return function(data) {
+			console.log("success auth");
+			console.log(self)
+			self.is_authenticated = true;
+			self.authentication_data = data
+			self.setIsOwner()
+			self.on_success_callback(self)			
 		}
+
 	}
 
-	testAuth(callback){
-		this.user = "Reatret";
-		this.key = "smJEuy7K2f7Gi7O01e3RzsR4RjLnAx8tVYeKurpW";
+	testAuth(){
 		if(this.user != "" && this.key != ""){
-		 self.default_url = "https://" + self.user + ":" + self.key +
-		 	"@api.challonge.com/v1/tournaments";
+			this.default_url = "https://" + this.user + ":" + this.key +
+		 		"@api.challonge.com/v1/tournaments";
 			APIManager.request({
-				url: self.default_url + ".json",
+				url: this.default_url + ".json",
 				method: "GET",
-				success: this.successAuth(callback),
+				success: this.successAuth(this),
 				error: this.failAuth
 			});
 		}
 		else{
 			console.log("failed bc null");
-			this.failAuth();
+			chrome.storage.sync.set({auth_error: true }, function() {
+							chrome.runtime.sendMessage({cmd: "options"},
+								function(response) {});
+							});
 		}
 	}
 
-	authenticated(){
-		return this.is_authenticated;
-	}
-
-	requestFail(){
+	requestFail(url){
 		console.log("failed request with : " + url);
 	}
 
 	onSuccessfulMatches(callback) {
 		return function(data) {
-			
-			callback("ss");
+			callback(data);
 		}
 	}
 
 	getMatches(callback){
-		var request_url = self.default_url + "/" +
-			self.tournament_id + "/matches.json";
-		console.log("attempting: " + request_url);
+		var request_url = this.default_url + "/" +
+			this.tournament_id + "/matches.json";
 		APIManager.request({
 				url: request_url,
 				method: "GET",
 				success: this.onSuccessfulMatches(callback),
-				error: this.requestFail
+				error: this.requestFail(request_url)
 			});
 	}
 
