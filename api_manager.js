@@ -6,117 +6,149 @@ var tournament_owner = true;
 
 class APIManager {
 
-	constructor(tournament_id){
-		this.tournament_id = tournament_id;
+	constructor(tournament_location){
+		this.tournament_location = tournament_location;
+		this.tournament_id = "";
 		this.is_owner = false;
-		this.authentication_data = ""
-		this.on_success_callback = ""
 		this.is_authenticated = false;
 		this.user = "";
 		this.key = "";
-		self.default_url = "";
+		this.url_id = "";
 	}
 
-	static request(settings){
-		$.ajax(settings);
-	}
-
-	initialize(callback){
-		this.on_success_callback = callback
-		this.initAuth()
-	}
-
-	setIsOwner() {
-		$.each(this.authentication_data, function(index, tournament_obj){
-			console.log(tournament_obj.tournament.id + " " + this.tournament_id);
-			if(tournament_obj.tournament.id == this.tournament_id){
-				this.is_owner = true;
-				return false;
-				//this will not work because id is not the same thing as URL code.
-				//need a second api call to retrieve the tournament object by url code.
-				//and then compare.
-			}
+	initAuth(callback){
+		var manager = this;
+		manager.retrieveUser(function(){
+			manager.retrieveKey(function(){
+				manager.testAuth(function(data, textStatus, jqXHR){
+					console.log("success auth");
+					manager.is_authenticated = true;
+					manager.setIsOwner(callback, data);
+				},
+				function(jqXHR, textStatus, errorThrown, loginAttempt){
+					console.log("failed auth.");
+					if(loginAttempt){
+						chrome.storage.sync.set({auth_error: true }, function() {
+							chrome.runtime.sendMessage({cmd: "options"}, function(response) {});
+						});
+					}
+					else{
+						chrome.runtime.sendMessage({cmd: "options"}, function(response) {});
+					}
+				});
+			});
 		});
 	}
 
-	initAuth(){
-		this.retrieveUser();
-	}
+	setIsOwner(callback, my_tournaments){
+		if(this.is_authenticated){
+			var self = this;
+			var hosts = this.tournament_location.host.split(".");
+			var id = this.tournament_location.pathname.replace(/^\/+/g, '');
+			if(hosts.length == 3) this.url_id = hosts[0] + "-" + id;
+			else this.url_id = id;
 
-	retrieveUser(){
-		var self = this
-    	chrome.storage.sync.get('user', function (data) {
-        	self.user = data.user;
-        	self.retrieveKey();
-    	});
-	}
-
-	retrieveKey(){
-		var self = this
-		chrome.storage.sync.get('key', function (data) {
-        	self.key = data.key;
-        	self.testAuth();
-    	});
-	}
-
-	failAuth(){
-		console.log("failed auth.");
-		chrome.storage.sync.set({auth_error: true }, function() {
-			chrome.runtime.sendMessage({cmd: "options"}, function(response) {});
-		});
-	}
-
-	successAuth(self){
-		return function(data) {
-			console.log("success auth");
-			console.log(self)
-			self.is_authenticated = true;
-			self.authentication_data = data
-			self.setIsOwner()
-			self.on_success_callback(self)			
+			this.getTournament(function(data, textStatus, jqXHR){
+				self.tournament_id = data.tournament.id;
+				self.is_owner = false;
+				$.each(my_tournaments, function(index, tournament_obj){
+					if(tournament_obj.tournament.id == self.tournament_id){
+						self.is_owner = true;
+						return false;
+					}
+				});
+				callback();
+			},
+			function(jqXHR, textStatus, errorThrown){
+				self.is_owner = false;
+				callback();
+			});
 		}
-
+		else{
+			this.is_owner = false;
+			callback();
+		}
 	}
 
-	testAuth(){
+	testAuth(success, fail){
 		if(this.user != "" && this.key != ""){
-			this.default_url = "https://" + this.user + ":" + this.key +
-		 		"@api.challonge.com/v1/tournaments";
-			APIManager.request({
-				url: this.default_url + ".json",
-				method: "GET",
-				success: this.successAuth(this),
-				error: this.failAuth
+			this.getMyTournaments(function(data, textStatus, jqXHR){
+				success(data, textStatus, jqXHR);
+			},
+			function(jqXHR, textStatus, errorThrown){
+				fail(jqXHR, textStatus, errorThrown, true);
 			});
 		}
 		else{
 			console.log("failed bc null");
-			chrome.storage.sync.set({auth_error: true }, function() {
-							chrome.runtime.sendMessage({cmd: "options"},
-								function(response) {});
-							});
+			fail(null, null, null, false);
 		}
 	}
 
-	requestFail(url){
-		console.log("failed request with : " + url);
-	}
-
-	onSuccessfulMatches(callback) {
-		return function(data) {
-			callback(data);
-		}
-	}
-
-	getMatches(callback){
-		var request_url = this.default_url + "/" +
-			this.tournament_id + "/matches.json";
+	getTournament(success, fail){
+		var api_url = this.getAPIURL("tournaments/"+this.url_id+".json");
 		APIManager.request({
-				url: request_url,
-				method: "GET",
-				success: this.onSuccessfulMatches(callback),
-				error: this.requestFail(request_url)
-			});
+			url: api_url,
+			method: "GET",
+			success: function(data, textStatus, jqXHR){
+				success(data, textStatus, jqXHR);
+			},
+			error: function(jqXHR, textStatus, errorThrown){
+				fail(jqXHR, textStatus, errorThrown);
+			}
+		});
+	}
+
+	getMyTournaments(success, fail){
+		var api_url = this.getAPIURL("tournaments.json");
+		APIManager.request({
+			url: api_url,
+			method: "GET",
+			success: function(data, textStatus, jqXHR){
+				success(data, textStatus, jqXHR);
+			},
+			error: function(jqXHR, textStatus, errorThrown){
+				fail(jqXHR, textStatus, errorThrown);
+			}
+		});
+	}
+
+	getMatches(success, fail){
+		var api_url = this.getAPIURL("tournaments/"+this.url_id+"/matches.json");
+		APIManager.request({
+			url: api_url,
+			method: "GET",
+			success: function(data, textStatus, jqXHR){
+				success(data, textStatus, jqXHR);
+			},
+			error: function(jqXHR, textStatus, errorThrown){
+				fail(jqXHR, textStatus, errorThrown);
+			}
+		});
+	}
+
+	retrieveUser(callback){
+		var self = this;
+    	chrome.storage.sync.get('user', function (data) {
+        	self.user = data.user;
+        	callback();
+    	});
+	}
+
+	retrieveKey(callback){
+		var self = this;
+		chrome.storage.sync.get('key', function (data) {
+        	self.key = data.key;
+        	callback();
+    	});
+	}
+
+	getAPIURL(api_path){
+		return "https://"+this.user+":"+this.key+"@api.challonge.com/v1/"+api_path;
+	}
+
+	static request(settings){
+		$.ajax(settings);
 	}
 
 }

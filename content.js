@@ -137,8 +137,8 @@ class Match {
 
 class MatchDictionary {
 	
-	constructor(response_data){
-		self.matches = []
+	constructor(){
+		var matches = $('.match');
 		this.match_dictionary = {
 			total_matches: 0,
 			match_objects: []
@@ -164,36 +164,25 @@ class MatchDictionary {
 	}
 }
 
-function onGetMatches(data){
-	console.log("new matches data: ")
-	console.log(data)
-
-	/*
+function start_service(){
+	console.log(api_manager.is_authenticated +" " + api_manager.is_owner);
+	match_dictionary = new MatchDictionary();
 	var stream_step = new Step();
 	stream_step.updateBody("Welcome to StreamAssist.");
-	stream_step.show();*/
-}
-
-function start_service(api_manager){
-	console.log(api_manager.initialization_data)
-	console.log(api_manager.is_authenticated + " " + api_manager.is_owner);
+	stream_step.show();
 	var refreshUI = setInterval(function() {
-/*		if(match_dictionary.checkMatchUpdate()){
+		if(match_dictionary.checkMatchUpdate()){
 			console.log("bracket updated");
-		}*/
-		api_manager.getMatches(onGetMatches);
+		}
 	}, 1000);
 }
 
 $(function(){
 	var tournament_body = $('.tournaments.tournaments-show');
 	if(tournament_body.length > 0){
-
-		var tournament_id = window.location.pathname.replace(/^\/+/g, '');
-		console.log("tournament_id: "+tournament_id);
-
-		api_manager = new APIManager(tournament_id);
-		api_manager.initialize(start_service);
+		api_manager = new APIManager(window.location);
+		api_manager.initAuth(start_service);
+		
 	}
 	else{
 		console.log("not a tournament page.");
