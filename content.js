@@ -50,10 +50,10 @@ class Step {
 
 class Match {
 
-	constructor(match){
-		this.element = match;
-		this.match_id = this.element.attr("data-match-id");
-		this.state = this.getState();
+	constructor(match_element, match_id, match_state){
+		this.element = match_element;
+		this.match_id = match_id;
+		this.state = match_state;
 		this.hover = false;
 		this.setOnHover();
 	}
@@ -93,7 +93,7 @@ class Match {
 				var state = self.state;
 				var id = self.match_id;
 				if(!self.hover){
-					if(state == MatchState.open){
+					if(state == "open"){
 						var curr_width = eval(background.attr("width"));
 						background.attr({width: curr_width + 30});
 
@@ -114,7 +114,7 @@ class Match {
 					self.hover = true;
 				}
 				else{
-					if(state == MatchState.open){
+					if(state == "open"){
 						console.log(texts);
 						texts.forEach(function(text){
 							var curr_tip = text.attr("data-tooltip");
@@ -137,43 +137,59 @@ class Match {
 
 class MatchDictionary {
 	
-	constructor(){
-		var matches = $('.match');
-		this.match_dictionary = {
-			total_matches: 0,
-			match_objects: []
-		};
-		for(let i = 0; i < matches.length; i++){
-			var match = new Match(matches.eq(i));
-			this.match_dictionary.total_matches++;
-			this.match_dictionary.match_objects.push(match);
-		}
+	constructor(manager){
+		this.manager = manager;
+		this.match_dictionary = [];
+		var self = this;
+		manager.getMatches(function(data, textStatus, jqXHR){
+			$.each(data, function(index, match_obj){
+				var match_id = match_obj.match.id;
+				var match_state = match_obj.match.state;
+				var match_element = $( "svg[data-match-id='"+match_id+"']" ).first();
+				var match = new Match(match_element, match_id, match_state);
+				self.match_dictionary.push(match);
+			});
+		},
+		function(){
+			console.log("fail matches");
+		});
 	}
 
-	checkMatchUpdate(){
-		var changed = false;
+	checkMatchUpdate(callback){
 		var match_dictionary = this.match_dictionary;
-		for(let i = 0; i < match_dictionary.match_objects.length; i++){
-			var match_obj = match_dictionary.match_objects[i];
-			if(match_obj.state != match_obj.getState()){
-				changed = true;
-				match_obj.state = match_obj.getState();
-			}
-		}
-		return changed;
+		var manager = this.manager;
+
+		manager.getMatches(function(data, textStatus, jqXHR){
+			var changed = false;
+			$.each(data, function(index, match_obj){
+				var dict_obj = match_dictionary[index];
+				if(dict_obj.match_id != match_obj.match.id){
+				}
+
+				if(dict_obj.state != match_obj.match.state){
+					changed = true;
+					dict_obj.state = match_obj.match.state;
+				}
+			});
+			callback(changed);
+		});
+	}
+}
+
+function onMatchUpdate(changed){
+	if(changed){
+		console.log("bracket updated.");
 	}
 }
 
 function start_service(){
 	console.log(api_manager.is_authenticated +" " + api_manager.is_owner);
-	match_dictionary = new MatchDictionary();
+	match_dictionary = new MatchDictionary(api_manager);
 	var stream_step = new Step();
 	stream_step.updateBody("Welcome to StreamAssist.");
 	stream_step.show();
 	var refreshUI = setInterval(function() {
-		if(match_dictionary.checkMatchUpdate()){
-			console.log("bracket updated");
-		}
+		match_dictionary.checkMatchUpdate(onMatchUpdate);
 	}, 1000);
 }
 
