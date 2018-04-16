@@ -48,6 +48,63 @@ class Step {
 	}
 }
 
+class StreamIcon {
+	constructor(match_snap, extension){
+		this.extension = extension;
+		this.match_snap = match_snap;
+		this.active = false;
+		this.element = extension.text(25, 30, "");
+		this.element.addClass("match--fa-icon");
+		this.tip = "Play on Stream";
+		this.tooltip = null;
+		this.element.attr({
+			width: 21,
+			height: 25,
+			"text-anchor":"middle",
+			"data-tooltip": this.tip
+		});
+		this.setOnHover();
+	}
+
+	toggle(){
+		if(active){
+			this.element.attr({text: ''});
+			this.active = false;
+		}
+		else{
+			this.element.attr({text: ''});
+			this.active = true;
+		}
+	}
+
+	setOnHover(){
+		var self = this;
+		this.element.hover(function(){
+			self.tooltip = Snap(101.935, 31);
+			self.tooltip.addClass("svg-tooltip");
+			self.tooltip.attr({
+				x: 199.032478,
+				y: 54
+			});
+			var tooltip_rect = self.tooltip.rect(0, 5, 101.935, 26);
+			tooltip_rect.attr({
+				rx: 3,
+				ry: 3
+			});
+			var tooltip_poly = self.tooltip.polygon(45.9675,5,55.9675,5,50.9675,0);
+			var tooltip_text = self.tooltip.text(10.1475, 22, self.tip);
+			tooltip_text.attr({
+				height: 20,
+				width: 81.64
+			});
+			self.match_snap.append(self.tooltip);
+		},
+		function(){
+			self.tooltip.remove();
+		});
+	}
+}
+
 class Match {
 
 	constructor(match_element, match_id, match_state){
@@ -59,35 +116,21 @@ class Match {
 	}
 
 	setOnHover(){
-		var id = this.match_id;
-		var state = this.state;
-		this.element.hover(
-			this.getOnHover($(this), true),
-			this.getOnHover($(this), false)
-		);
-	}
-
-	getState(){
-		return Match.getMatchState(this.element);
-	}
-
-	static getMatchState(element){
-		if(element.hasClass("-pending")){
-			return MatchState.pending;
-		}
-		if(element.hasClass("-open")){
-			return MatchState.open;
-		}		
-		if(element.hasClass("-complete")){
-			return MatchState.complete;
-		}
+		var self = this;
+		this.element.hover(function(){
+			self.getOnHover($(self), true)();
+		},
+		function(){
+			self.getOnHover($(self), false)();
+		});
 	}
 
 	getOnHover(match, onHover){
 		var self = match.get(0);
 		if(onHover){
 			return function(){
-				var extension = Snap(self.element.get(0)).select(".match-extension");
+				var match_snap = Snap(self.element.get(0));
+				var extension = match_snap.select(".match-extension");
 				var texts = extension.selectAll(".match--fa-icon");
 				var background = extension.select(".match--menu-wrapper");
 				var state = self.state;
@@ -102,20 +145,12 @@ class Match {
 							text.attr({x: curr_x + 30});
 						});
 
-						var stream_icon = extension.text(25, 30, "");
-						stream_icon.addClass("match--fa-icon");
-						stream_icon.attr({
-								width: 21,
-								height: 25,
-								"text-anchor":"middle",
-								"data-tooltip":"Add Match to Stream"
-						});
+						var stream_icon = new StreamIcon(match_snap, extension);
 					}
 					self.hover = true;
 				}
 				else{
 					if(state == "open"){
-						console.log(texts);
 						texts.forEach(function(text){
 							var curr_tip = text.attr("data-tooltip");
 							if(curr_tip == "Unmark as In Progress" || curr_tip == "Mark as In Progress"){
@@ -172,6 +207,9 @@ class MatchDictionary {
 				}
 			});
 			callback(changed);
+		},
+		function(){
+			console.log("get matches failed.");
 		});
 	}
 }
