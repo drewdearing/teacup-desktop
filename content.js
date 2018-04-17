@@ -1,6 +1,8 @@
 var match_dictionary = null;
 var api_manager = null;
 var service_enabled = true;
+var current_match = null;
+var next_match = null;
 
 class Step {
 	constructor(icon = "fa-play-circle"){
@@ -53,7 +55,7 @@ class StreamIcon {
 		this.extension = extension;
 		this.match_snap = match_snap;
 		this.active = false;
-		this.element = extension.text(25, 30, "");
+		this.element = extension.text(25, 30, "");
 		this.element.addClass("match--fa-icon");
 		this.tip = "Play on Stream";
 		this.tooltip = null;
@@ -64,17 +66,25 @@ class StreamIcon {
 			"data-tooltip": this.tip
 		});
 		this.setOnHover();
+		this.setOnClick();
 	}
 
 	toggle(){
-		if(active){
-			this.element.attr({text: ''});
+		if(this.active){
+			this.element.attr({text: ''});
 			this.active = false;
 		}
 		else{
-			this.element.attr({text: ''});
+			this.element.attr({text: ''});
 			this.active = true;
 		}
+	}
+
+	setOnClick(){
+		var self = this;
+		this.element.click(function(){
+			self.toggle();
+		});
 	}
 
 	setOnHover(){
