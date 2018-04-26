@@ -52,11 +52,11 @@ class Step {
 
 class StreamIcon {
 	constructor(match_snap, extension, match_id){
-		this.match_id
+		this.match_id = match_id;
 		this.extension = extension;
 		this.match_snap = match_snap;
 		this.element = extension.text(25, 30, "");	
-		if(current_match == match_id){
+		if(current_match == match_id || next_match == match_id){
 			this.element.attr({text: ''});
 			this.active = true;
 		}
@@ -83,7 +83,7 @@ class StreamIcon {
 
 	toggle(){
 		if(this.active){
-
+			unqueueStreamMatch(this.match_id);
 			this.element.attr({text: ''});
 			this.active = false;
 			this.tooltip_text.attr({text: this.tip});
@@ -102,6 +102,7 @@ class StreamIcon {
 			});
 		}
 		else{
+			queueStreamMatch(this.match_id);
 			this.element.attr({text: ''});
 			this.active = true;
 			this.tooltip_text.attr({text: this.cancelTip});
@@ -246,7 +247,7 @@ class Match {
 
 class MatchDictionary {
 	
-	constructor(manager){
+	constructor(manager, callback){
 		this.manager = manager;
 		this.match_dictionary = [];
 		var self = this;
@@ -258,6 +259,7 @@ class MatchDictionary {
 				var match = new Match(match_element, match_id, match_state);
 				self.match_dictionary.push(match);
 			});
+			callback();
 		},
 		function(){
 			console.log("fail matches");
@@ -280,11 +282,64 @@ class MatchDictionary {
 					dict_obj.state = match_obj.match.state;
 				}
 			});
-			callback(changed);
+
+			if(current_match != api_manager.tournament_cache.current_match
+				|| next_match != api_manager.tournament_cache.next_match){
+				changed = true;
+				api_manager.updateCache({current_match: current_match, next_match: next_match}, function(){
+					callback(changed);
+				});
+			}
+			else{
+				callback(changed);
+			}
 		},
 		function(){
 			console.log("get matches failed.");
 		});
+	}
+
+	getMatch(match_id){
+		var return_match = null;
+		for(let i=0; i < this.match_dictionary.length; i++){
+			if(this.match_dictionary[i].match_id === match_id){
+				return_match = this.match_dictionary[i];
+			}
+		}
+		return return_match;
+	}
+}
+
+function queueStreamMatch(match_id){
+	var match = match_dictionary.getMatch(match_id);
+	if(match != null){
+		if(current_match == null){
+			current_match = match_id;
+			match.element.find(".match--wrapper-background").addClass("-live");
+		}
+		else{
+			if(next_match != null){
+				unqueueStreamMatch(next_match);
+			}
+			next_match = match_id;
+			match.element.find(".match--wrapper-background").addClass("-livequeue");
+		}
+	}
+}
+
+function unqueueStreamMatch(match_id){
+	if(current_match === match_id){
+		match_dictionary.getMatch(current_match).element.find(".match--wrapper-background").removeClass("-live -livequeue");
+		current_match = null;
+		if(next_match != null){
+			match_dictionary.getMatch(next_match).element.find(".match--wrapper-background").removeClass("-livequeue");
+			queueStreamMatch(next_match);
+			next_match = null;
+		}
+	}
+	else if(next_match === match_id){
+		match_dictionary.getMatch(next_match).element.find(".match--wrapper-background").removeClass("-live -livequeue");
+		next_match = null;
 	}
 }
 
@@ -294,9 +349,25 @@ function onMatchUpdate(changed){
 	}
 }
 
-function start_service(){
+function init_cache_data(callback){
+	console.log("setting cache values");
+	queueStreamMatch(api_manager.tournament_cache.current_match);
+	queueStreamMatch(api_manager.tournament_cache.next_match);
+	callback();
+}
+
+function init_match_dictionary(callback){
 	console.log(api_manager.is_authenticated +" " + api_manager.is_owner);
-	match_dictionary = new MatchDictionary(api_manager);
+	match_dictionary = new MatchDictionary(api_manager, callback);
+}
+
+function init_service(callback){
+	init_match_dictionary(function(){
+		init_cache_data(callback);
+	});
+}
+
+function start_service(){
 	var stream_step = new Step();
 	stream_step.updateBody("Welcome to StreamAssist.");
 	stream_step.show();
@@ -309,8 +380,9 @@ $(function(){
 	var tournament_body = $('.tournaments.tournaments-show');
 	if(tournament_body.length > 0){
 		api_manager = new APIManager(window.location);
-		api_manager.initAuth(start_service);
-		
+		api_manager.initAuth(function(){
+			init_service(start_service);
+		});
 	}
 	else{
 		console.log("not a tournament page.");

@@ -1,5 +1,5 @@
 chrome.runtime.onInstalled.addListener(function() {
-    chrome.storage.sync.set({user: '', key: '', auth_error: false }, function() {
+    chrome.storage.sync.set({user: '', key: '', auth_error: false, tournament_cache: [] }, function() {
     });
     chrome.declarativeContent.onPageChanged.removeRules(undefined, function() {
       chrome.declarativeContent.onPageChanged.addRules([{

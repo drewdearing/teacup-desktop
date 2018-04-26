@@ -9,6 +9,7 @@ class APIManager {
 	constructor(tournament_location){
 		this.tournament_location = tournament_location;
 		this.tournament_id = "";
+		this.tournament_cache = null;
 		this.is_owner = false;
 		this.is_authenticated = false;
 		this.user = "";
@@ -23,7 +24,9 @@ class APIManager {
 				manager.testAuth(function(data, textStatus, jqXHR){
 					console.log("success auth");
 					manager.is_authenticated = true;
-					manager.setIsOwner(callback, data);
+					manager.setIsOwner(function(){
+						manager.initCache(callback);
+					}, data);
 				},
 				function(jqXHR, textStatus, errorThrown, loginAttempt){
 					console.log("failed auth.");
@@ -38,6 +41,62 @@ class APIManager {
 				});
 			});
 		});
+	}
+
+	initCache(callback){
+		var self = this;
+    	chrome.storage.sync.get('tournament_cache', function (data) {
+        	var cache = data.tournament_cache;
+        	for(let i = 0; i < cache.length; i++){
+        		if(cache[i].url_id === self.url_id){
+        			self.tournament_cache = cache[i];
+        			break;
+        		}
+        	}
+        	if(self.tournament_cache == null){
+        		console.log("cache is null");
+        		self.tournament_cache = {
+        			"url_id": self.url_id,
+        			"current_match": null,
+        			"next_match": null
+        		}
+        		cache.push(self.tournament_cache);
+        		chrome.storage.sync.set({tournament_cache: cache}, function() {
+        			console.log("set cache in storage");
+        			callback();
+        		});
+        	}
+        	else{
+        		console.log("was not null, found cache.");
+        		callback();
+        	}
+    	});
+	}
+
+	updateCache(data, callback){
+		var self = this;
+		self.tournament_cache.current_match = data.current_match;
+		self.tournament_cache.next_match = data.next_match;
+		chrome.storage.sync.get('tournament_cache', function (data) {
+        	var cache = data.tournament_cache;
+        	var index = null;
+        	for(let i = 0; i < cache.length; i++){
+        		if(cache[i].url_id === self.url_id){
+        			index = i;
+        			break;
+        		}
+        	}
+        	if(index != null){
+        		cache[index] = self.tournament_cache;
+        	}
+        	else{
+        		cache.push(self.tournament_cache);
+        	}
+        	chrome.storage.sync.set({tournament_cache: cache}, function() {
+        		console.log("update cache in storage");
+        		callback();
+        	});
+    	});
 	}
 
 	setIsOwner(callback, my_tournaments){
