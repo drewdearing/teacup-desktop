@@ -7,7 +7,7 @@
 		"persistent": false
 	},
 	"content_scripts": [{
-		"css": ["styles.css"],
+		"css": ["css/fontawesome-all.css", "styles.css"],
 		"js": ["jquery-3.3.1.min.js", "snap.svg-min.js", "api_manager.js", "content.js"],
 		"matches": ["https://*.challonge.com/*", "https://challonge.com/*", "http://challonge.com/*", "http://*.challonge.com/*"]
 	}],
@@ -31,5 +31,8 @@
       "48": "images/logo-48.png",
       "128": "images/logo-128.png"
     },
+    "web_accessible_resources": [
+    	"webfonts/*"
+    ],
 	"manifest_version": 2
 }

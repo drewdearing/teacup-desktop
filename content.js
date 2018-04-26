@@ -51,14 +51,26 @@ class Step {
 }
 
 class StreamIcon {
-	constructor(match_snap, extension){
+	constructor(match_snap, extension, match_id){
+		this.match_id
 		this.extension = extension;
 		this.match_snap = match_snap;
-		this.active = false;
-		this.element = extension.text(25, 30, "");
+		this.element = extension.text(25, 30, "");	
+		if(current_match == match_id){
+			this.element.attr({text: ''});
+			this.active = true;
+		}
+		else{
+			this.active = false;
+		}
+		this.element.addClass("fa5-icon");
 		this.element.addClass("match--fa-icon");
 		this.tip = "Play on Stream";
+		this.cancelTip = "Cancel Stream Match";
 		this.tooltip = null;
+		this.tooltip_rect = null;
+		this.tooltip_text = null;
+		this.tooltip_poly = null;
 		this.element.attr({
 			width: 21,
 			height: 25,
@@ -71,12 +83,41 @@ class StreamIcon {
 
 	toggle(){
 		if(this.active){
-			this.element.attr({text: ''});
+
+			this.element.attr({text: ''});
 			this.active = false;
+			this.tooltip_text.attr({text: this.tip});
+			this.tooltip.attr({
+				width: 101.925,
+				x: 199.032478,
+			});
+			this.tooltip_rect.attr({
+				width: 101.935
+			});
+			this.tooltip_poly.attr({
+				points: "45.9675,5,55.9675,5,50.9675,0"
+			});
+			this.tooltip_text.attr({
+				width: 81.64
+			});
 		}
 		else{
-			this.element.attr({text: ''});
+			this.element.attr({text: ''});
 			this.active = true;
+			this.tooltip_text.attr({text: this.cancelTip});
+			this.tooltip.attr({
+				width: 134.025,
+				x: 182.987478,
+			});
+			this.tooltip_rect.attr({
+				width: 134.025
+			});
+			this.tooltip_poly.attr({
+				points: "62.0125,5,72.0125,5,67.0125,0"
+			});
+			this.tooltip_text.attr({
+				width: 113.73
+			});
 		}
 	}
 
@@ -90,23 +131,46 @@ class StreamIcon {
 	setOnHover(){
 		var self = this;
 		this.element.hover(function(){
-			self.tooltip = Snap(101.935, 31);
-			self.tooltip.addClass("svg-tooltip");
-			self.tooltip.attr({
-				x: 199.032478,
-				y: 54
-			});
-			var tooltip_rect = self.tooltip.rect(0, 5, 101.935, 26);
-			tooltip_rect.attr({
-				rx: 3,
-				ry: 3
-			});
-			var tooltip_poly = self.tooltip.polygon(45.9675,5,55.9675,5,50.9675,0);
-			var tooltip_text = self.tooltip.text(10.1475, 22, self.tip);
-			tooltip_text.attr({
-				height: 20,
-				width: 81.64
-			});
+			if(!self.active){
+				self.tooltip = Snap(101.935, 31);
+				self.tooltip.addClass("svg-tooltip");
+				self.tooltip.attr({
+					x: 199.032478,
+					y: 54
+				});
+				self.tooltip_rect = self.tooltip.rect(0, 5, 101.935, 26);
+				self.tooltip_rect.attr({
+					rx: 3,
+					ry: 3
+				});
+				self.tooltip_poly = self.tooltip.polygon(45.9675,5,55.9675,5,50.9675,0);
+				self.tooltip_text = self.tooltip.text(10.1475, 22, self.tip);
+				self.tooltip_text.attr({
+					height: 20,
+					width: 81.64
+				});
+				
+			}
+			else{
+				self.tooltip = Snap(134.025, 31);
+				self.tooltip.addClass("svg-tooltip");
+				self.tooltip.attr({
+					x: 182.987478,
+					y: 54
+				});
+				self.tooltip_rect = self.tooltip.rect(0, 5, 134.025, 26);
+				self.tooltip_rect.attr({
+					rx: 3,
+					ry: 3
+				});
+				self.tooltip_poly = self.tooltip.polygon(62.0125,5,72.0125,5,67.0125,0);
+				self.tooltip_text = self.tooltip.text(10.1475, 22, self.cancelTip);
+				self.tooltip_text.attr({
+					height: 20,
+					width: 113.73
+				});
+			}
+
 			self.match_snap.append(self.tooltip);
 		},
 		function(){
@@ -155,7 +219,7 @@ class Match {
 							text.attr({x: curr_x + 30});
 						});
 
-						var stream_icon = new StreamIcon(match_snap, extension);
+						var stream_icon = new StreamIcon(match_snap, extension, id);
 					}
 					self.hover = true;
 				}
