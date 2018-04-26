@@ -283,10 +283,10 @@ class MatchDictionary {
 				}
 			});
 
-			if(current_match != api_manager.tournament_cache.current_match
-				|| next_match != api_manager.tournament_cache.next_match){
+			if(current_match != manager.tournament_cache.current_match
+				|| next_match != manager.tournament_cache.next_match){
 				changed = true;
-				api_manager.updateCache({current_match: current_match, next_match: next_match}, function(){
+				manager.updateCache({current_match: current_match, next_match: next_match}, function(){
 					callback(changed);
 				});
 			}
