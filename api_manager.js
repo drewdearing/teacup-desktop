@@ -186,6 +186,34 @@ class APIManager {
 		});
 	}
 
+	getParticipants(success, fail){
+		var api_url = this.getAPIURL("tournaments/"+this.url_id+"/participants.json");
+		APIManager.request({
+			url: api_url,
+			method: "GET",
+			success: function(data, textStatus, jqXHR){
+				success(data, textStatus, jqXHR);
+			},
+			error: function(jqXHR, textStatus, errorThrown){
+				fail(jqXHR, textStatus, errorThrown);
+			}
+		});
+	}
+
+	getMatch(match_id, success, fail){
+		var api_url = this.getAPIURL("tournaments/"+this.url_id+"/matches/"+match_id+".json");
+		APIManager.request({
+			url: api_url,
+			method: "GET",
+			success: function(data, textStatus, jqXHR){
+				success(data, textStatus, jqXHR);
+			},
+			error: function(jqXHR, textStatus, errorThrown){
+				fail(jqXHR, textStatus, errorThrown);
+			}
+		});
+	}
+
 	retrieveUser(callback){
 		var self = this;
     	chrome.storage.sync.get('user', function (data) {

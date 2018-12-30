@@ -3,6 +3,9 @@ var api_manager = null;
 var service_enabled = true;
 var current_match = null;
 var next_match = null;
+var participants_dictionary = null;
+var label_dictionary = null;
+var UIChanged = true;
 
 class Step {
 	constructor(icon = "fa-play-circle"){
@@ -36,8 +39,13 @@ class Step {
 		}
 	}
 
+	destroy(){
+		this.element.remove();
+		this.element = null;
+	}
+
 	updateBody(body){
-		this.step_body.replaceWith(body);
+		this.step_body.text(body);
 	}
 
 	updateIcon(new_icon){
@@ -46,7 +54,7 @@ class Step {
 	}
 
 	updateFooter(footer){
-		this.step_footer.replaceWith(footer);
+		this.step_footer.text(footer);
 	}
 }
 
@@ -182,8 +190,9 @@ class StreamIcon {
 
 class Match {
 
-	constructor(match_element, match_id, match_state){
+	constructor(match_element, match_id, match_state, match_object){
 		this.element = match_element;
+		this.object = match_object;
 		this.match_id = match_id;
 		this.state = match_state;
 		this.hover = false;
@@ -245,6 +254,63 @@ class Match {
 	}
 }
 
+class LabelsDictionary {
+	constructor(participant_manager){
+		this.manager = participant_manager;
+		this.labels = {};
+	}
+}
+
+class ParticipantsDictionary {
+	constructor(manager, callback){
+		this.manager = manager;
+		this.participants_dictionary = {};
+		var self = this;
+		manager.getParticipants(function(data, textStatus, jqXHR){
+			$.each(data, function(index, participant_obj){
+				var p = {
+					"info": participant_obj.participant,
+					"labels": {},
+					"defaults": {}
+				}
+				self.participants_dictionary[participant_obj.participant.id] = p;
+			});
+			callback();
+		},
+		function(){
+			console.log("fail participants");
+		});
+	}
+
+	deleteLabel(label_name){
+		$.each(this.participants_dictionary, function(key) {
+			delete this.participants_dictionary[key].labels[label_name];
+			delete this.participants_dictionary[key].defaults[label_name];
+    	});
+	}
+
+	createLabel(label_name){
+		$.each(this.participants_dictionary, function(key) {
+			this.participants_dictionary[key].labels[label_name] = null;
+			this.participants_dictionary[key].defaults[label_name] = null;
+    	});
+	}
+
+	resetLabel(participant_id, label_name){
+		var p = this.participants_dictionary[participant_id];
+		p.labels[label_name] = p.defaults[label_name];
+	}
+
+	setLabelValue(participant_id, label_name, value){
+		var participant = this.participants_dictionary[participant_id];
+		participant.labels[label_name] = value;
+	}
+
+	getParticipant(participant_id){
+		return this.participants_dictionary[participant_id];
+	}
+}
+
 class MatchDictionary {
 	
 	constructor(manager, callback){
@@ -256,7 +322,7 @@ class MatchDictionary {
 				var match_id = match_obj.match.id;
 				var match_state = match_obj.match.state;
 				var match_element = $( "svg[data-match-id='"+match_id+"']" ).first();
-				var match = new Match(match_element, match_id, match_state);
+				var match = new Match(match_element, match_id, match_state, match_obj.match);
 				self.match_dictionary.push(match);
 			});
 			callback();
@@ -274,12 +340,10 @@ class MatchDictionary {
 			var changed = false;
 			$.each(data, function(index, match_obj){
 				var dict_obj = match_dictionary[index];
-				if(dict_obj.match_id != match_obj.match.id){
-				}
-
 				if(dict_obj.state != match_obj.match.state){
 					changed = true;
 					dict_obj.state = match_obj.match.state;
+					dict_obj.object = match_obj.match;
 				}
 			});
 
@@ -304,6 +368,7 @@ class MatchDictionary {
 		for(let i=0; i < this.match_dictionary.length; i++){
 			if(this.match_dictionary[i].match_id === match_id){
 				return_match = this.match_dictionary[i];
+				break;
 			}
 		}
 		return return_match;
@@ -344,6 +409,7 @@ function unqueueStreamMatch(match_id){
 }
 
 function onMatchUpdate(changed){
+	UIChanged = changed;
 	if(changed){
 		console.log("bracket updated.");
 	}
@@ -357,23 +423,70 @@ function init_cache_data(callback){
 }
 
 function init_match_dictionary(callback){
-	console.log(api_manager.is_authenticated +" " + api_manager.is_owner);
 	match_dictionary = new MatchDictionary(api_manager, callback);
+}
+
+function init_participants(callback){
+	participants_dictionary = new ParticipantsDictionary(api_manager, callback);
 }
 
 function init_service(callback){
 	init_match_dictionary(function(){
-		init_cache_data(callback);
+		init_participants(function(){
+			init_cache_data(callback);
+		});
 	});
 }
 
-function start_service(){
+function start_service() {
 	var stream_step = new Step();
-	stream_step.updateBody("Welcome to StreamAssist.");
-	stream_step.show();
-	var refreshUI = setInterval(function() {
+	var serviceInterval = null;
+	api_manager.getTournament(check_state, end_service);
+
+	function check_state(data, textStatus, jqXHR){
+		var state = data.tournament.state;
+		console.log(state);
+		if(state == "pending"){
+			stream_step.updateBody("Start the tournament to get started with StreamAssist!");
+			stream_step.show();
+			end_service();
+		}
+		else if(state == "complete"){
+			stream_step.destroy();
+			end_service();
+		}
+		else{
+			serviceInterval = setInterval(service, 1000);
+		}
+	}
+
+	function service(){
+		if(UIChanged){
+			if(current_match == null){
+				stream_step.updateBody("Welcome to StreamAssist.");
+				stream_step.show();
+			}
+			else{
+				var match = match_dictionary.getMatch(current_match).object;
+				var p1 = participants_dictionary.getParticipant(match.player1_id);
+				var p2 = participants_dictionary.getParticipant(match.player2_id);
+				stream_step.updateBody("Now Streaming: " + p1.info.name + " vs. " + p2.info.name);
+				stream_step.show();
+			}
+		}
+		update_matches();
+	}
+
+	function update_matches(){
 		match_dictionary.checkMatchUpdate(onMatchUpdate);
-	}, 1000);
+	}
+
+	function end_service(){
+		if(serviceInterval != null){
+			clearInterval(serviceInterval);
+			serviceInterval = null;
+		}
+	}
 }
 
 $(function(){
