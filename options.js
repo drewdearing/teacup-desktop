@@ -24,3 +24,13 @@ form.onsubmit = function(){
 		window.close();
 	});
 };
+
+
+chrome.storage.sync.get("tournament_cache", function(data) {
+	var tournament_selection = $("#tourney-ids");
+	var cache = data.tournament_cache;
+	for (var i = 0; i < cache.length; i++) {
+		tournament_selection.append("<option value='"+cache[i].url_id+"'>"+cache[i].url_id+"</option>")
+	}
+	
+});

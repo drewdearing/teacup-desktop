@@ -58,7 +58,9 @@ class APIManager {
         		self.tournament_cache = {
         			"url_id": self.url_id,
         			"current_match": null,
-        			"next_match": null
+        			"next_match": null,
+        			"labels": null,
+        			"participants": null
         		}
         		cache.push(self.tournament_cache);
         		chrome.storage.sync.set({tournament_cache: cache}, function() {
@@ -75,8 +77,9 @@ class APIManager {
 
 	updateCache(data, callback){
 		var self = this;
-		self.tournament_cache.current_match = data.current_match;
-		self.tournament_cache.next_match = data.next_match;
+		$.each(data, function(key, value) {
+			self.tournament_cache[key] = value;
+    	});
 		chrome.storage.sync.get('tournament_cache', function (data) {
         	var cache = data.tournament_cache;
         	var index = null;

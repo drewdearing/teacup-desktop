@@ -254,10 +254,40 @@ class Match {
 	}
 }
 
-class LabelsDictionary {
-	constructor(participant_manager){
-		this.manager = participant_manager;
-		this.labels = {};
+class LabelDictionary {
+	constructor(participants_dict, api){
+		this.participants = participants_dict;
+		this.manager = api;
+		this.labels = {
+			/*"score":{
+				"name": "Score",
+				"type": "set_unique",
+				"selector": "integer_input",
+				"default": 0
+		}*/
+		};
+	}
+
+	restoreLabelsFromCache(cached_dictionary){
+		if(cached_dictionary != null){
+			this.labels = cached_dictionary;
+		}
+	}
+
+	createLabel(label_id, label_obj){
+		if(!(label_id in this.labels)){
+			this.labels[label_id] = label_obj;
+			this.participants.createLabel(label_id);
+			manager.updateCache({labels: this.labels}, function(){});
+			return true;
+		}
+		else return false;
+	}
+
+	deleteLabel(label_id){
+		delete this.labels[label_id];
+		this.participants.deleteLabel(label_id);
+		manager.updateCache({labels: this.labels}, function(){});
 	}
 }
 
@@ -282,32 +312,61 @@ class ParticipantsDictionary {
 		});
 	}
 
+	restoreLabelsFromCache(cached_dictionary){
+		if(cached_dictionary != null){
+			$.each(cached_dictionary, function(key, value) {
+				if(key in this.participants_dictionary){
+					this.participants_dictionary[key].labels = value.labels;
+					this.participants_dictionary[key].defaults = value.defaults;
+				}
+	    	});
+		}
+	}
+
 	deleteLabel(label_name){
 		$.each(this.participants_dictionary, function(key) {
 			delete this.participants_dictionary[key].labels[label_name];
 			delete this.participants_dictionary[key].defaults[label_name];
     	});
+
+    	updateParticipantCache();
 	}
 
 	createLabel(label_name){
 		$.each(this.participants_dictionary, function(key) {
 			this.participants_dictionary[key].labels[label_name] = null;
-			this.participants_dictionary[key].defaults[label_name] = null;
     	});
+
+    	updateParticipantCache();
 	}
 
 	resetLabel(participant_id, label_name){
 		var p = this.participants_dictionary[participant_id];
 		p.labels[label_name] = p.defaults[label_name];
+
+		updateParticipantCache();
 	}
 
 	setLabelValue(participant_id, label_name, value){
 		var participant = this.participants_dictionary[participant_id];
 		participant.labels[label_name] = value;
+
+		updateParticipantCache();
+	}
+
+	setLabelDefault(participant_id, label_name, value){
+		var participant = this.participants_dictionary[participant_id];
+		participant.defaults[label_name] = value;
+
+		updateParticipantCache();
 	}
 
 	getParticipant(participant_id){
 		return this.participants_dictionary[participant_id];
+	}
+
+	updateParticipantCache(){
+		manager.updateCache({participants: this.participants_dictionary}, function(){});
 	}
 }
 
@@ -419,6 +478,8 @@ function init_cache_data(callback){
 	console.log("setting cache values");
 	queueStreamMatch(api_manager.tournament_cache.current_match);
 	queueStreamMatch(api_manager.tournament_cache.next_match);
+	participants_dictionary.restoreLabelsFromCache(api_manager.tournament_cache.participants);
+	label_dictionary.restoreLabelsFromCache(api_manager.tournament_cache.labels);
 	callback();
 }
 
@@ -430,10 +491,17 @@ function init_participants(callback){
 	participants_dictionary = new ParticipantsDictionary(api_manager, callback);
 }
 
+function init_labels(callback){
+	label_dictionary = new LabelDictionary(participants_dictionary, api_manager);
+	callback();
+}
+
 function init_service(callback){
 	init_match_dictionary(function(){
 		init_participants(function(){
-			init_cache_data(callback);
+			init_labels(function(){
+				init_cache_data(callback);
+			});
 		});
 	});
 }

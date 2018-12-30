@@ -20,6 +20,7 @@
     </style>
 </head>
 <body>
+    <h3>Challonge API Key</h3>
     <p id="error"></p>
     <p id="message">Please supply your Challonge API credentials to use this service. Challonge requires these fields to retrieve and modify their data. This data is saved locally and will not be shared with any party other than Challonge.</p>
     <form id="setkey">
@@ -38,6 +39,20 @@
             <span id="status-display"></span>
         </p>
     </form>
+    <hr/>
+    <h3>Stream Labels</h3>
+    <p id="labels-message">Create a new Label</p>
+    <form id="setkey">
+        <p></p>
+        <p>
+            <label for="user">Tournament ID</label><br />
+            <select name="tourney" id="tourney-ids"></select>
+        </p>
+
+    </form>
+
+
+    <script src="jquery-3.3.1.min.js"></script>
     <script src="options.js"></script>
 </body>
 </html>
