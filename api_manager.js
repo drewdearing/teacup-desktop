@@ -7,28 +7,27 @@ var tournament_owner = true;
 class APIManager {
 
 	constructor(tournament_location){
-		this.tournament_location = tournament_location;
-		this.tournament_id = "";
 		this.tournament_cache = null;
 		this.is_owner = false;
 		this.is_authenticated = false;
 		this.user = "";
 		this.key = "";
-		this.url_id = "";
+		var hosts = tournament_location.host.split(".");
+		var id = tournament_location.pathname.replace(/^\/+/g, '');
+		this.url_id = (hosts.length == 3) ? hosts[0] + "-" + id : id;
 	}
 
 	initAuth(callback){
-		var manager = this;
-		manager.retrieveUser(function(){
-			manager.retrieveKey(function(){
-				manager.testAuth(function(data, textStatus, jqXHR){
+		this.retrieveUser(() => {
+			this.retrieveKey(() => {
+				this.testAuth((data, textStatus, jqXHR) => {
 					console.log("success auth");
-					manager.is_authenticated = true;
-					manager.setIsOwner(function(){
-						manager.initCache(callback);
+					this.is_authenticated = true;
+					this.setIsOwner(() => {
+						this.initCache(callback);
 					}, data);
 				},
-				function(jqXHR, textStatus, errorThrown, loginAttempt){
+				(jqXHR, textStatus, errorThrown, loginAttempt) => {
 					console.log("failed auth.");
 					if(loginAttempt){
 						chrome.storage.sync.set({auth_error: true }, function() {
@@ -44,26 +43,20 @@ class APIManager {
 	}
 
 	initCache(callback){
-		var self = this;
-    	chrome.storage.sync.get('tournament_cache', function (data) {
+    	chrome.storage.sync.get('tournament_cache', (data) => {
         	var cache = data.tournament_cache;
-        	for(let i = 0; i < cache.length; i++){
-        		if(cache[i].url_id === self.url_id){
-        			self.tournament_cache = cache[i];
-        			break;
-        		}
-        	}
-        	if(self.tournament_cache == null){
+        	this.tournament_cache = (this.url_id in cache) ? cache[this.url_id] : null;
+        	if(this.tournament_cache == null){
         		console.log("cache is null");
-        		self.tournament_cache = {
-        			"url_id": self.url_id,
+        		this.tournament_cache = {
+        			"url_id": this.url_id,
         			"current_match": null,
         			"next_match": null,
         			"labels": null,
         			"participants": null
         		}
-        		cache.push(self.tournament_cache);
-        		chrome.storage.sync.set({tournament_cache: cache}, function() {
+        		cache[this.url_id] = this.tournament_cache;
+        		chrome.storage.sync.set({tournament_cache: cache}, () => {
         			console.log("set cache in storage");
         			callback();
         		});
@@ -76,54 +69,37 @@ class APIManager {
 	}
 
 	updateCache(data, callback){
-		var self = this;
-		$.each(data, function(key, value) {
-			self.tournament_cache[key] = value;
-    	});
-		chrome.storage.sync.get('tournament_cache', function (data) {
-        	var cache = data.tournament_cache;
-        	var index = null;
-        	for(let i = 0; i < cache.length; i++){
-        		if(cache[i].url_id === self.url_id){
-        			index = i;
-        			break;
-        		}
-        	}
-        	if(index != null){
-        		cache[index] = self.tournament_cache;
-        	}
-        	else{
-        		cache.push(self.tournament_cache);
-        	}
-        	chrome.storage.sync.set({tournament_cache: cache}, function() {
-        		console.log("update cache in storage");
-        		callback();
-        	});
-    	});
-	}
+        $.each(data, (key, value) => {
+            this.tournament_cache[key] = value;
+        });
+        chrome.storage.sync.get('tournament_cache', (data) => {
+            var cache = data.tournament_cache;
+            cache[this.url_id] = this.tournament_cache;
+            chrome.storage.sync.set({tournament_cache: cache}, () => {
+                console.log("update cache in storage");
+                callback();
+            });
+        });
+    }
 
-	setIsOwner(callback, my_tournaments){
+	setIsOwner(callback, this_tournament){
 		if(this.is_authenticated){
-			var self = this;
-			var hosts = this.tournament_location.host.split(".");
-			var id = this.tournament_location.pathname.replace(/^\/+/g, '');
-			if(hosts.length == 3) this.url_id = hosts[0] + "-" + id;
-			else this.url_id = id;
-
-			this.getTournament(function(data, textStatus, jqXHR){
-				self.tournament_id = data.tournament.id;
-				self.is_owner = false;
-				$.each(my_tournaments, function(index, tournament_obj){
-					if(tournament_obj.tournament.id == self.tournament_id){
-						self.is_owner = true;
-						return false;
-					}
-				});
-				callback();
-			},
-			function(jqXHR, textStatus, errorThrown){
-				self.is_owner = false;
-				callback();
+			var current_desc = this_tournament.tournament.description;
+			var api_url = this.getAPIURL("tournaments/"+this.url_id+".json");
+			APIManager.request({
+				url: api_url,
+				method: "PUT",
+				dataType: 'json',
+				contentType: 'application/json',
+				data: JSON.stringify({tournament: {description: current_desc}}),
+				success: (data, textStatus, jqXHR) => {
+					this.is_owner = true;
+					callback();
+				},
+				error: (jqXHR, textStatus, errorThrown) => {
+					this.is_owner = false;
+					callback();
+				}
 			});
 		}
 		else{
@@ -134,10 +110,10 @@ class APIManager {
 
 	testAuth(success, fail){
 		if(this.user != "" && this.key != ""){
-			this.getMyTournaments(function(data, textStatus, jqXHR){
+			this.getTournament((data, textStatus, jqXHR) => {
 				success(data, textStatus, jqXHR);
 			},
-			function(jqXHR, textStatus, errorThrown){
+			(jqXHR, textStatus, errorThrown) => {
 				fail(jqXHR, textStatus, errorThrown, true);
 			});
 		}
@@ -152,10 +128,10 @@ class APIManager {
 		APIManager.request({
 			url: api_url,
 			method: "GET",
-			success: function(data, textStatus, jqXHR){
+			success: (data, textStatus, jqXHR) => {
 				success(data, textStatus, jqXHR);
 			},
-			error: function(jqXHR, textStatus, errorThrown){
+			error: (jqXHR, textStatus, errorThrown) => {
 				fail(jqXHR, textStatus, errorThrown);
 			}
 		});
@@ -166,10 +142,10 @@ class APIManager {
 		APIManager.request({
 			url: api_url,
 			method: "GET",
-			success: function(data, textStatus, jqXHR){
+			success: (data, textStatus, jqXHR) => {
 				success(data, textStatus, jqXHR);
 			},
-			error: function(jqXHR, textStatus, errorThrown){
+			error: (jqXHR, textStatus, errorThrown) => {
 				fail(jqXHR, textStatus, errorThrown);
 			}
 		});
@@ -180,10 +156,10 @@ class APIManager {
 		APIManager.request({
 			url: api_url,
 			method: "GET",
-			success: function(data, textStatus, jqXHR){
+			success: (data, textStatus, jqXHR) => {
 				success(data, textStatus, jqXHR);
 			},
-			error: function(jqXHR, textStatus, errorThrown){
+			error: (jqXHR, textStatus, errorThrown) => {
 				fail(jqXHR, textStatus, errorThrown);
 			}
 		});
@@ -194,10 +170,10 @@ class APIManager {
 		APIManager.request({
 			url: api_url,
 			method: "GET",
-			success: function(data, textStatus, jqXHR){
+			success: (data, textStatus, jqXHR) => {
 				success(data, textStatus, jqXHR);
 			},
-			error: function(jqXHR, textStatus, errorThrown){
+			error: (jqXHR, textStatus, errorThrown) => {
 				fail(jqXHR, textStatus, errorThrown);
 			}
 		});
@@ -208,27 +184,25 @@ class APIManager {
 		APIManager.request({
 			url: api_url,
 			method: "GET",
-			success: function(data, textStatus, jqXHR){
+			success: (data, textStatus, jqXHR) => {
 				success(data, textStatus, jqXHR);
 			},
-			error: function(jqXHR, textStatus, errorThrown){
+			error: (jqXHR, textStatus, errorThrown) => {
 				fail(jqXHR, textStatus, errorThrown);
 			}
 		});
 	}
 
 	retrieveUser(callback){
-		var self = this;
-    	chrome.storage.sync.get('user', function (data) {
-        	self.user = data.user;
+    	chrome.storage.sync.get('user', (data) => {
+        	this.user = data.user;
         	callback();
     	});
 	}
 
 	retrieveKey(callback){
-		var self = this;
-		chrome.storage.sync.get('key', function (data) {
-        	self.key = data.key;
+		chrome.storage.sync.get('key', (data) => {
+        	this.key = data.key;
         	callback();
     	});
 	}

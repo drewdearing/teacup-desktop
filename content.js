@@ -507,6 +507,7 @@ function init_service(callback){
 }
 
 function start_service() {
+	console.log("is owner:" + api_manager.is_owner);
 	var stream_step = new Step();
 	var serviceInterval = null;
 	api_manager.getTournament(check_state, end_service);
