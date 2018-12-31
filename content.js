@@ -131,59 +131,57 @@ class StreamIcon {
 	}
 
 	setOnClick(){
-		var self = this;
-		this.element.click(function(){
-			self.toggle();
+		this.element.click(() => {
+			this.toggle();
 		});
 	}
 
 	setOnHover(){
-		var self = this;
-		this.element.hover(function(){
-			if(!self.active){
-				self.tooltip = Snap(101.935, 31);
-				self.tooltip.addClass("svg-tooltip");
-				self.tooltip.attr({
+		this.element.hover(() => {
+			if(!this.active){
+				this.tooltip = Snap(101.935, 31);
+				this.tooltip.addClass("svg-tooltip");
+				this.tooltip.attr({
 					x: 199.032478,
 					y: 54
 				});
-				self.tooltip_rect = self.tooltip.rect(0, 5, 101.935, 26);
-				self.tooltip_rect.attr({
+				this.tooltip_rect = this.tooltip.rect(0, 5, 101.935, 26);
+				this.tooltip_rect.attr({
 					rx: 3,
 					ry: 3
 				});
-				self.tooltip_poly = self.tooltip.polygon(45.9675,5,55.9675,5,50.9675,0);
-				self.tooltip_text = self.tooltip.text(10.1475, 22, self.tip);
-				self.tooltip_text.attr({
+				this.tooltip_poly = this.tooltip.polygon(45.9675,5,55.9675,5,50.9675,0);
+				this.tooltip_text = this.tooltip.text(10.1475, 22, this.tip);
+				this.tooltip_text.attr({
 					height: 20,
 					width: 81.64
 				});
 				
 			}
 			else{
-				self.tooltip = Snap(134.025, 31);
-				self.tooltip.addClass("svg-tooltip");
-				self.tooltip.attr({
+				this.tooltip = Snap(134.025, 31);
+				this.tooltip.addClass("svg-tooltip");
+				this.tooltip.attr({
 					x: 182.987478,
 					y: 54
 				});
-				self.tooltip_rect = self.tooltip.rect(0, 5, 134.025, 26);
-				self.tooltip_rect.attr({
+				this.tooltip_rect = this.tooltip.rect(0, 5, 134.025, 26);
+				this.tooltip_rect.attr({
 					rx: 3,
 					ry: 3
 				});
-				self.tooltip_poly = self.tooltip.polygon(62.0125,5,72.0125,5,67.0125,0);
-				self.tooltip_text = self.tooltip.text(10.1475, 22, self.cancelTip);
-				self.tooltip_text.attr({
+				this.tooltip_poly = this.tooltip.polygon(62.0125,5,72.0125,5,67.0125,0);
+				this.tooltip_text = this.tooltip.text(10.1475, 22, this.cancelTip);
+				this.tooltip_text.attr({
 					height: 20,
 					width: 113.73
 				});
 			}
 
-			self.match_snap.append(self.tooltip);
+			this.match_snap.append(this.tooltip);
 		},
-		function(){
-			self.tooltip.remove();
+		() => {
+			this.tooltip.remove();
 		});
 	}
 }
@@ -200,26 +198,24 @@ class Match {
 	}
 
 	setOnHover(){
-		var self = this;
-		this.element.hover(function(){
-			self.getOnHover($(self), true)();
+		this.element.hover(() => {
+			this.getOnHover(true)();
 		},
-		function(){
-			self.getOnHover($(self), false)();
+		() => {
+			this.getOnHover(false)();
 		});
 	}
 
-	getOnHover(match, onHover){
-		var self = match.get(0);
+	getOnHover(onHover){
 		if(onHover){
-			return function(){
-				var match_snap = Snap(self.element.get(0));
+			return () => {
+				var match_snap = Snap(this.element.get(0));
 				var extension = match_snap.select(".match-extension");
 				var texts = extension.selectAll(".match--fa-icon");
 				var background = extension.select(".match--menu-wrapper");
-				var state = self.state;
-				var id = self.match_id;
-				if(!self.hover){
+				var state = this.state;
+				var id = this.match_id;
+				if(!this.hover){
 					if(state == "open"){
 						var curr_width = eval(background.attr("width"));
 						background.attr({width: curr_width + 30});
@@ -231,7 +227,7 @@ class Match {
 
 						var stream_icon = new StreamIcon(match_snap, extension, id);
 					}
-					self.hover = true;
+					this.hover = true;
 				}
 				else{
 					if(state == "open"){
@@ -247,8 +243,8 @@ class Match {
 			}
 		}
 		else{
-			return function(){
-				self.hover = false;
+			return () => {
+				this.hover = false;
 			}
 		}
 	}
@@ -258,14 +254,7 @@ class LabelDictionary {
 	constructor(participants_dict, api){
 		this.participants = participants_dict;
 		this.manager = api;
-		this.labels = {
-			/*"score":{
-				"name": "Score",
-				"type": "set_unique",
-				"selector": "integer_input",
-				"default": 0
-		}*/
-		};
+		this.labels = {};
 	}
 
 	restoreLabelsFromCache(cached_dictionary){
@@ -295,26 +284,25 @@ class ParticipantsDictionary {
 	constructor(manager, callback){
 		this.manager = manager;
 		this.participants_dictionary = {};
-		var self = this;
-		manager.getParticipants(function(data, textStatus, jqXHR){
-			$.each(data, function(index, participant_obj){
+		manager.getParticipants((data, textStatus, jqXHR) => {
+			$.each(data, (index, participant_obj) => {
 				var p = {
 					"info": participant_obj.participant,
 					"labels": {},
 					"defaults": {}
 				}
-				self.participants_dictionary[participant_obj.participant.id] = p;
+				this.participants_dictionary[participant_obj.participant.id] = p;
 			});
 			callback();
 		},
-		function(){
+		() => {
 			console.log("fail participants");
 		});
 	}
 
 	restoreLabelsFromCache(cached_dictionary){
 		if(cached_dictionary != null){
-			$.each(cached_dictionary, function(key, value) {
+			$.each(cached_dictionary, (key, value) => {
 				if(key in this.participants_dictionary){
 					this.participants_dictionary[key].labels = value.labels;
 					this.participants_dictionary[key].defaults = value.defaults;
@@ -324,7 +312,7 @@ class ParticipantsDictionary {
 	}
 
 	deleteLabel(label_name){
-		$.each(this.participants_dictionary, function(key) {
+		$.each(this.participants_dictionary, (key) => {
 			delete this.participants_dictionary[key].labels[label_name];
 			delete this.participants_dictionary[key].defaults[label_name];
     	});
@@ -333,7 +321,7 @@ class ParticipantsDictionary {
 	}
 
 	createLabel(label_name){
-		$.each(this.participants_dictionary, function(key) {
+		$.each(this.participants_dictionary, (key) => {
 			this.participants_dictionary[key].labels[label_name] = null;
     	});
 
@@ -375,30 +363,26 @@ class MatchDictionary {
 	constructor(manager, callback){
 		this.manager = manager;
 		this.match_dictionary = [];
-		var self = this;
-		manager.getMatches(function(data, textStatus, jqXHR){
-			$.each(data, function(index, match_obj){
+		manager.getMatches((data, textStatus, jqXHR) => {
+			$.each(data, (index, match_obj) => {
 				var match_id = match_obj.match.id;
 				var match_state = match_obj.match.state;
 				var match_element = $( "svg[data-match-id='"+match_id+"']" ).first();
 				var match = new Match(match_element, match_id, match_state, match_obj.match);
-				self.match_dictionary.push(match);
+				this.match_dictionary.push(match);
 			});
 			callback();
 		},
-		function(){
-			console.log("fail matches");
+		() => {
+			console.log("failed to populate match dictionary");
 		});
 	}
 
 	checkMatchUpdate(callback){
-		var match_dictionary = this.match_dictionary;
-		var manager = this.manager;
-
-		manager.getMatches(function(data, textStatus, jqXHR){
+		this.manager.getMatches((data, textStatus, jqXHR) => {
 			var changed = false;
-			$.each(data, function(index, match_obj){
-				var dict_obj = match_dictionary[index];
+			$.each(data, (index, match_obj) => {
+				var dict_obj = this.match_dictionary[index];
 				if(dict_obj.state != match_obj.match.state){
 					changed = true;
 					dict_obj.state = match_obj.match.state;
@@ -406,10 +390,10 @@ class MatchDictionary {
 				}
 			});
 
-			if(current_match != manager.tournament_cache.current_match
-				|| next_match != manager.tournament_cache.next_match){
+			if(current_match != this.manager.tournament_cache.current_match
+				|| next_match != this.manager.tournament_cache.next_match){
 				changed = true;
-				manager.updateCache({current_match: current_match, next_match: next_match}, function(){
+				this.manager.updateCache({current_match: current_match, next_match: next_match}, () => {
 					callback(changed);
 				});
 			}
@@ -417,7 +401,7 @@ class MatchDictionary {
 				callback(changed);
 			}
 		},
-		function(){
+		() => {
 			console.log("get matches failed.");
 		});
 	}
