@@ -6,7 +6,7 @@ const ExamplePage = () => (
   <Container className="dashboard">
     <Row>
       <Col md={12}>
-        <h3 className="page-title">Dashboard</h3>
+        <h3 className="page-title">Dashboard 1</h3>
       </Col>
     </Row>
     <Row>

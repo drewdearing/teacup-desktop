@@ -9,6 +9,7 @@ import Router from './Router';
 import store from './store';
 import ScrollToTop from './ScrollToTop';
 
+
 class App extends Component {
   constructor() {
     super();
