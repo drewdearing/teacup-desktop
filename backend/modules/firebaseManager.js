@@ -75,6 +75,7 @@ exports.FirebaseManager = class FirebaseManager {
 
     async deleteGuild(guild){
         let guild_id = await guild.guild_id()
+        await this.guild_locker.getWriteAccess(guild_id)
         if(guild.dirty()){
             let guildDB = await guild.guildDB()
             let memberDB = await guild.memberDB()
@@ -85,10 +86,12 @@ exports.FirebaseManager = class FirebaseManager {
             guild._dirty = false
         }
         this.guild_cache.del(guild_id)
+        this.guild_locker.stopWriting(guild_id)
     }
 
     async deleteLeague(league){
         let league_id = await league.league_id()
+        await this.league_locker.getWriteAccess(league_id)
         if(league.dirty()){
             let leagueDB = await league.leagueDB()
             let playerDB = await league.playerDB()
@@ -99,13 +102,12 @@ exports.FirebaseManager = class FirebaseManager {
             league._dirty = false
         }
         this.league_cache.del(league_id)
+        this.league_locker.stopWriting(league_id)
     }
 
     async onGuildExpire(guild_id, guild){
         if(this.guild_locker.numReaders(guild_id) <= 0){
-            await this.guild_locker.getWriteAccess(guild_id)
             await this.deleteGuild(guild)
-            this.guild_locker.stopWriting(guild_id)
         }
         else{
             if(!guild.expired()){
@@ -113,10 +115,9 @@ exports.FirebaseManager = class FirebaseManager {
                     if(!data.isReading){
                         let currentReaders = this.guild_locker.numReaders(guild_id)
                         if(currentReaders <= 0){
-                            await this.guild_locker.getWriteAccess(guild_id)
                             await this.deleteGuild(guild)
                             this.guild_locker.removeReadListener(guild_id, listener)
-                            this.guild_locker.stopWriting(guild_id)
+                            
                         }
                     }
                     else{
@@ -132,10 +133,8 @@ exports.FirebaseManager = class FirebaseManager {
     }
 
     async onLeagueExpire(league_id, league){
-        if(this.league_locker.numReaders(league_id) <= 0){          
-            await this.league_locker.getWriteAccess(league_id)
+        if(this.league_locker.numReaders(league_id) <= 0){
             await this.deleteLeague(league)
-            this.league_locker.stopWriting(league_id)
         }
         else{
             if(!league.expired()){
@@ -143,10 +142,8 @@ exports.FirebaseManager = class FirebaseManager {
                     if(!data.isReading){                       
                         let currentReaders = this.league_locker.numReaders(league_id)
                         if(currentReaders <= 0){
-                            await this.league_locker.getWriteAccess(league_id)
                             await this.deleteLeague(league)
                             this.league_locker.removeReadListener(league_id, listener)
-                            this.league_locker.stopWriting(league_id)
                         }
                     }
                     else{
@@ -158,6 +155,27 @@ exports.FirebaseManager = class FirebaseManager {
                 this.league_locker.addReadListener(league_id, listener)
             }
         }
+    }
+
+    async close(){
+        let leagueIDs = this.league_cache.keys()
+        let guildIDs = this.guild_cache.keys()
+        for(var i in leagueIDs){
+            let league_id = leagueIDs[i]
+            let league = this.league_cache.get(league_id)
+            await this.deleteLeague(league)
+        }
+
+        for(var i in guildIDs){
+            let guild_id = guildIDs[i]
+            let guild = this.guild_cache.get(guild_id)
+            await this.deleteGuild(guild)
+        }
+
+        this.league_cache.flushAll()
+        this.guild_cache.flushAll()
+        this.league_cache.close()
+        this.guild_cache.close()
     }
 
     closeGuild(guild_id){

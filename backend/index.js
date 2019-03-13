@@ -3,23 +3,22 @@ require('dotenv').config()
 const admin = require('firebase-admin')
 const FirebaseManager = require('./modules/firebaseManager').FirebaseManager
 const express = require("express")
-var bodyParser = require('body-parser');
 const v8 = require('v8');
-
 const app = express()
 
+var bodyParser = require('body-parser');
 var serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://rankbot-1ada2.firebaseio.com"
+    databaseURL: "https://teacup-e5fd8.firebaseio.com"
 })
 
-var fbManager = new FirebaseManager(admin.firestore(), 3600, 120)
+var fbManager = new FirebaseManager(admin.firestore(), 600, 120)
 
 app.use(bodyParser.json())
 
-app.listen(3000, () => {
+const server = app.listen(3000, () => {
     console.log("Server running on port 3000");
 })
 
@@ -95,21 +94,23 @@ app.get("/guild/:guild_id", async (req, res, next) => {
 app.get("/players/:league_id", async (req, res, next) => {
     let league_id = req.params.league_id
     let update = req.query.update
-    console.log(update)
     update = update != null && update === 'true'
     let league = await fbManager.getLeague(league_id)
+    let returnData = {}
     try{
         if(update){
-            let message = await league.update()
-            res.json(message)
+            let msg = await league.update()
+            returnData.message = msg.message
         }
-        else{
-            let players = await league.players()
-            res.json(players)
-        }
+        returnData.players = await league.players()
+        returnData.error = false
+        res.json(returnData)
     }
     catch(data){
-        res.json(data)
+        returnData.players = null
+        returnData.message = data.err
+        returnData.error = true
+        res.json(returnData)
     }
     await fbManager.closeLeague(league_id)
 })
@@ -125,4 +126,19 @@ app.get("/members/:guild_id", async (req, res, next) => {
         res.json(data)
     }
     await fbManager.closeGuild(guild_id)
+})
+
+async function stopServer(){
+    server.close(async () => {
+        await fbManager.close()
+        process.exit(0)
+    })
+}
+
+process.on('SIGINT', async () => {
+  await stopServer()
+})
+
+process.on('SIGTERM', async () => {
+  await stopServer()
 })

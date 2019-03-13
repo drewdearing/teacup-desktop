@@ -2,6 +2,8 @@ const ServiceManager = require('./serviceManager').ServiceManager
 
 const AccessLocker = require('./accessLocker').AccessLocker
 
+const Clone = require('./clone')
+
 exports.League = class League {
 
     constructor(league_id, db){
@@ -43,8 +45,9 @@ exports.League = class League {
             this._access_locker.stopWriting('data')
             await this._access_locker.getReadAccess('data')
             return new Promise((resolve, reject) => {
+                let data = Clone.cloneObject(this._data)
                 this._access_locker.stopReading('data')
-                resolve(this._data)
+                resolve(data)
             })
         }
         else {
@@ -53,8 +56,9 @@ exports.League = class League {
                     leagueDB.get().then((leagueDoc) => {
                         if(leagueDoc.exists){
                             this._data = leagueDoc.data()
+                            let data = Clone.cloneObject(this._data)
                             this._access_locker.stopWriting('data')
-                            resolve(this._data)
+                            resolve(data)
                         }
                         else{
                             this._access_locker.stopWriting('data')
@@ -82,8 +86,9 @@ exports.League = class League {
             this._access_locker.stopWriting('players')
             await this._access_locker.getReadAccess('players')
             return new Promise((resolve, reject) => {
+                let players = Clone.cloneObject(this._players)
                 this._access_locker.stopReading('players')
-                resolve(this._players)
+                resolve(players)
             })
         }
         else {
@@ -92,8 +97,9 @@ exports.League = class League {
                     playerDB.get().then((playersDoc) => {
                         if(playersDoc.exists){
                             this._players = playersDoc.data()
+                            let players = Clone.cloneObject(this._players)
                             this._access_locker.stopWriting('players')
-                            resolve(this._players)
+                            resolve(players)
                         }
                         else{
                             this._access_locker.stopWriting('players')
@@ -101,6 +107,7 @@ exports.League = class League {
                         }
                     })
                 }).catch((data) => {
+                    this._access_locker.stopWriting('players')
                     reject(data)
                 })
             })
@@ -144,21 +151,20 @@ exports.League = class League {
         let service_id = await this.service_id()
         let league_service = ServiceManager.init(service, service_id)
         if(league_service != null){
-            await this._access_locker.getWriteAccess('data')
-            await this._access_locker.getWriteAccess('players')
             return new Promise((resolve, reject) => {
-                league_service.update().then((data) =>{
+                league_service.update().then( async (data) =>{
                     if(data.all_updated){
+                        await this._access_locker.getWriteAccess('data')
+                        await this._access_locker.getWriteAccess('players')
                         this.data.max_points = data.max_points,
                         this.data.total_players = data.total_players
                         this._players = data.players
+                        this._dirty = true
                         this._access_locker.stopWriting('players')
                         this._access_locker.stopWriting('data')
                         resolve({message:'data updated'})
                     }
                     else{
-                        this._access_locker.stopWriting('players')
-                        this._access_locker.stopWriting('data')
                         reject({err:'unable to update data'})
                     }
                 })
@@ -197,6 +203,8 @@ exports.League = class League {
             if(ServiceManager.isType(type)){
                 data.service = type
                 data.id = id
+                this._data = data
+                this._dirty = true
                 this._access_locker.stopWriting('data')
                 return Promise.resolve({message: 'service set!'})
             }

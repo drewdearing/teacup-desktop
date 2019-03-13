@@ -56,7 +56,7 @@ exports.Guild = class Guild {
                         }
                         else{
                             this._access_locker.stopWriting('data')
-                            reject(this._data)
+                            reject({err: 'guild does not exist!'})
                         }
                     })
                 })
@@ -68,6 +68,8 @@ exports.Guild = class Guild {
         return new Promise((resolve, reject) => {
             this.data().then((data) => {
                 resolve(this._db.collection('members').doc(data.members))
+            }).catch((data) => {
+                reject(data)
             })
         })
     }
@@ -93,9 +95,12 @@ exports.Guild = class Guild {
                         }
                         else{
                             this._access_locker.stopWriting('members')
-                            reject(this._members)
+                            reject({err: 'member data cannot be accessed.'})
                         }
                     })
+                }).catch((data) => {
+                    this._access_locker.stopWriting('members')
+                    reject(data)
                 })
             })
         }
