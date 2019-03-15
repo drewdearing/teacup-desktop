@@ -1,11 +1,12 @@
 const AccessLocker = require('./accessLocker').AccessLocker
+const Clone = require('./clone')
 
 exports.Guild = class Guild {
 
-    constructor(guild_id, db){
-        this._db = db
+    constructor(guild_id, admin){
+        this._db = admin.firestore()
         this._guild_id = guild_id
-        this._guildDB = db.collection('guilds').doc(guild_id)
+        this._guildDB = this._db.collection('guilds').doc(guild_id)
         this._members = null
         this._data = null
         this._dirty = false
@@ -41,8 +42,9 @@ exports.Guild = class Guild {
             this._access_locker.stopWriting('data')
             await this._access_locker.getReadAccess('data')
             return new Promise((resolve, reject) => {
+                let data = Clone.cloneObject(this._data)
                 this._access_locker.stopReading('data')
-                resolve(this._data)
+                resolve(data)
             })
         }
         else {
@@ -51,8 +53,9 @@ exports.Guild = class Guild {
                     guildDB.get().then((guildDoc) => {
                         if(guildDoc.exists){
                             this._data = guildDoc.data()
+                            let data = Clone.cloneObject(this._data)
                             this._access_locker.stopWriting('data')
-                            resolve(this._data)
+                            resolve(data)
                         }
                         else{
                             this._access_locker.stopWriting('data')
@@ -80,8 +83,9 @@ exports.Guild = class Guild {
             this._access_locker.stopWriting('members')
             await this._access_locker.getReadAccess('members')
             return new Promise((resolve, reject) => {
+                let members = Clone.cloneObject(this._members)
                 this._access_locker.stopReading('members')
-                resolve(this._members)
+                resolve(members)
             })
         }
         else {
@@ -90,8 +94,9 @@ exports.Guild = class Guild {
                     memberDB.get().then((membersDoc) => {
                         if(membersDoc.exists){
                             this._members = membersDoc.data()
+                            let members = Clone.cloneObject(this._members)
                             this._access_locker.stopWriting('members')
-                            resolve(this._members)
+                            resolve(members)
                         }
                         else{
                             this._access_locker.stopWriting('members')

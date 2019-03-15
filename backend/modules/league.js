@@ -6,10 +6,10 @@ const Clone = require('./clone')
 
 exports.League = class League {
 
-    constructor(league_id, db){
-        this._db = db
+    constructor(league_id, admin){
+        this._db = admin.firestore()
         this._league_id = league_id
-        this._leagueDB = db.collection('leagues').doc(league_id)
+        this._leagueDB = this._db.collection('leagues').doc(league_id)
         this._players = null
         this._data = null
         this._dirty = false
