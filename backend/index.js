@@ -24,11 +24,49 @@ const server = app.listen(3000, () => {
 app.post("/users", async (req, res) => {
     let email = req.query.email
     let password = req.query.password
-    fbManager.users.create(email, password).then((user) => {
-        res.json(user)
-    }).catch((error) => {
+    try{
+        let user = await fbManager.users.createUser(email, password)
+        let user_id = await user.user_id()
+        let data = await user.data()
+        res.json(data)
+        fbManager.users.finish(user_id)
+    }
+    catch(err){
+        console.log(err)
+        res.json(err)
+    }
+})
+
+app.get("/scenes/", async (req, res) => {
+    try{
+        let uid = await authenticateToken(req)
+        let user = await fbManager.users.get(uid)
+        let data = await user.data()
+        fbManager.users.finish(uid)
+        res.json(data.scenes)
+    }
+    catch(error){
         res.json(error)
-    })
+    }
+})
+
+app.post("/scenes/", async (req, res) => {
+    try{
+        let uid = await authenticateToken(req)
+        let user = await fbManager.users.get(uid)
+        let scene = await fbManager.scenes.createScene({
+            name: req.query.name,
+            owner: user
+        })
+        let data = await scene.data()
+        let scene_id = await scene.scene_id()
+        fbManager.users.finish(uid)
+        fbManager.scenes.finish(scene_id)
+        res.json(data)
+    }
+    catch(error){
+        res.json(error)
+    }
 })
 
 app.get("/league/:league_id", async (req, res) => {
@@ -142,6 +180,18 @@ app.get("/members/:guild_id", async (req, res, next) => {
     }
     await fbManager.guilds.finish(guild_id)
 })
+
+async function authenticateToken(req, res){
+    let idToken = req.query.token
+    try{
+        let decodedToken = await admin.auth().verifyIdToken(idToken)
+        var uid = decodedToken.uid
+        return uid
+    }
+    catch(error){
+        throw error
+    }
+}
 
 async function stopServer(){
     server.close(async () => {

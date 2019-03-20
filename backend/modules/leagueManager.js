@@ -2,8 +2,8 @@ const League = require('./league').League
 const ModelManager = require('./modelManager').ModelManager
 
 exports.LeagueManager = class LeagueManager extends ModelManager {
-	constructor(db, timeout, timecheck){
-		super(League, db, timeout, timecheck)
+	constructor(admin, timeout, timecheck){
+		super(League, admin, timeout, timecheck)
 	}
 
 	async saveCachedModel(league){

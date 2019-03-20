@@ -1,14 +1,13 @@
 import React, { PureComponent } from 'react';
-import { Field, reduxForm } from 'redux-form';
 import EyeIcon from 'mdi-react/EyeIcon';
 import KeyVariantIcon from 'mdi-react/KeyVariantIcon';
 import AccountOutlineIcon from 'mdi-react/AccountOutlineIcon';
 import PropTypes from 'prop-types';
-import renderCheckBoxField from '../../../shared/components/form/CheckBox';
+import CheckBox from '../../../shared/components/form/CheckBox';
 
 class LogInForm extends PureComponent {
   static propTypes = {
-    handleSubmit: PropTypes.func.isRequired,
+    onSuccess: PropTypes.func.isRequired,
   };
 
   constructor() {
@@ -18,6 +17,7 @@ class LogInForm extends PureComponent {
       formDisabled: false,
       email: '',
       password: '',
+      remember_me: false,
     };
   }
 
@@ -30,12 +30,16 @@ class LogInForm extends PureComponent {
 
   registerAccount = (e) => {
     e.preventDefault();
+  }
+
+  signIn = (e) => {
+    e.preventDefault();
     this.setState({
       formDisabled: true,
     });
-    console.log('hi');
+    console.log('signing in...');
     const apiKey = process.env.REACT_APP_API_KEY;
-    const requestURL = 'https://www.googleapis.com/identitytoolkit/v3/relyingparty/signupNewUser?key=';
+    const requestURL = 'https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=';
     fetch(requestURL + apiKey, {
       method: 'post',
       body: JSON.stringify({
@@ -46,25 +50,26 @@ class LogInForm extends PureComponent {
     })
       .then(
         (result) => {
-          console.log(result.json());
-          this.setState({
-            formDisabled: false,
+          console.log('result returned.');
+          result.json().then((data) => {
+            console.log(data);
+            if (!data.error) {
+              this.props.onSuccess(data, this.state.remember_me);
+            } else {
+              this.setState({
+                formDisabled: false,
+              });
+            }
           });
         },
         (error) => {
+          console.log('error returned.');
           console.log(error);
           this.setState({
             formDisabled: false,
           });
         },
       );
-  }
-
-  signIn = (e) => {
-    e.preventDefault();
-    this.setState({
-      formDisabled: true,
-    });
   }
 
   updateEmail = (e) => {
@@ -79,24 +84,31 @@ class LogInForm extends PureComponent {
     });
   }
 
+  updateRememberMe = (e) => {
+    if (e) {
+      this.setState({
+        remember_me: !this.state.remember_me,
+      });
+    }
+  }
+
   render() {
-    const { handleSubmit } = this.props;
+    const { showPassword } = this.state;
 
     return (
-      <form className="form" onSubmit={handleSubmit}>
+      <form className="form">
         <div className="form__form-group">
-          <span className="form__form-group-label">Username</span>
+          <span className="form__form-group-label">Email</span>
           <div className="form__form-group-field">
             <div className="form__form-group-icon">
               <AccountOutlineIcon />
             </div>
-            <Field
+            <input
               name="name"
-              component="input"
               type="text"
-              placeholder="Name"
-              disabled={this.state.formDisabled ? 'disabled' : ''}
+              placeholder="Email"
               onChange={e => this.updateEmail(e)}
+              disabled={this.state.formDisabled ? 'disabled' : ''}
             />
           </div>
         </div>
@@ -106,17 +118,17 @@ class LogInForm extends PureComponent {
             <div className="form__form-group-icon">
               <KeyVariantIcon />
             </div>
-            <Field
+            <input
               name="password"
-              component="input"
-              type={this.state.showPassword ? 'text' : 'password'}
+              type={showPassword ? 'text' : 'password'}
               placeholder="Password"
-              disabled={this.state.formDisabled ? 'disabled' : ''}
               onChange={e => this.updatePassword(e)}
+              disabled={this.state.formDisabled ? 'disabled' : ''}
             />
             <button
-              className={`form__form-group-button${this.state.showPassword ? ' active' : ''}`}
+              className={`form__form-group-button${showPassword ? ' active' : ''}`}
               onClick={e => this.showPassword(e)}
+              type="button"
               disabled={this.state.formDisabled ? 'disabled' : ''}
             ><EyeIcon />
             </button>
@@ -127,15 +139,16 @@ class LogInForm extends PureComponent {
         </div>
         <div className="form__form-group">
           <div className="form__form-group-field">
-            <Field
+            <CheckBox
               name="remember_me"
-              component={renderCheckBoxField}
               label="Remember me"
               disabled={this.state.formDisabled ? 'disabled' : ''}
+              onChange={e => this.updateRememberMe(e)}
             />
           </div>
         </div>
         <button
+          type="submit"
           className="btn btn-primary account__btn account__btn--small"
           onClick={e => this.signIn(e)}
           disabled={this.state.formDisabled ? 'disabled' : ''}
@@ -143,6 +156,7 @@ class LogInForm extends PureComponent {
           Sign In
         </button>
         <button
+          type="button"
           className="btn btn-primary account__btn account__btn--small"
           onClick={e => this.registerAccount(e)}
           disabled={this.state.formDisabled ? 'disabled' : ''}
@@ -154,6 +168,4 @@ class LogInForm extends PureComponent {
   }
 }
 
-export default reduxForm({
-  form: 'log_in_form',
-})(LogInForm);
+export default LogInForm;

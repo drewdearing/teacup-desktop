@@ -10,7 +10,7 @@ const wrappedRoutes = () => (
   <div>
     <Layout />
     <div className="container__wrap">
-      <Route path="/dashboard" component={Home} />
+      <Route path="/home" component={Home} />
       <Route exact path="/" component={Home} />
     </div>
   </div>

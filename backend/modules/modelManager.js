@@ -4,6 +4,7 @@ const AccessLocker = require('./accessLocker').AccessLocker
 exports.ModelManager = class ModelManager {
 	constructor(Model, admin, timeout, timecheck){
 		this.admin = admin
+        this.db = admin.firestore()
 		this.Model = Model
 		this.cache_timer = timeout
         this.checkperiod = timecheck

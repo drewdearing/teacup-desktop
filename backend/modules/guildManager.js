@@ -2,8 +2,8 @@ const Guild = require('./guild').Guild
 const ModelManager = require('./modelManager').ModelManager
 
 exports.GuildManager = class GuildManager extends ModelManager {
-	constructor(db, timeout, timecheck){
-		super(Guild, db, timeout, timecheck)
+	constructor(admin, timeout, timecheck){
+		super(Guild, admin, timeout, timecheck)
 	}
 
 	async saveCachedModel(guild){
