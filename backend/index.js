@@ -17,16 +17,16 @@ var fbManager = new FirebaseManager(admin, 600, 120)
 
 app.use(bodyParser.json())
 
-const server = app.listen(3000, () => {
-    console.log("Server running on port 3000");
+const server = app.listen(5000, () => {
+    console.log("Server running on port 5000");
 })
 
-app.post("/users", async (req, res) => {
+app.post("/newUser", async (req, res) => {
     let email = req.query.email
     let password = req.query.password
     try{
-        let user = await fbManager.users.createUser(email, password)
-        let user_id = await user.user_id()
+        let user = await fbManager.createUser(email, password)
+        let user_id = await user.id()
         let data = await user.data()
         res.json(data)
         fbManager.users.finish(user_id)
@@ -50,16 +50,16 @@ app.get("/scenes/", async (req, res) => {
     }
 })
 
-app.post("/scenes/", async (req, res) => {
+app.post("/newScene", async (req, res) => {
     try{
         let uid = await authenticateToken(req)
         let user = await fbManager.users.get(uid)
-        let scene = await fbManager.scenes.createScene({
+        let scene = await fbManager.createScene({
             name: req.query.name,
             owner: user
         })
         let data = await scene.data()
-        let scene_id = await scene.scene_id()
+        let scene_id = await scene.id()
         fbManager.users.finish(uid)
         fbManager.scenes.finish(scene_id)
         res.json(data)
@@ -148,7 +148,7 @@ app.get("/players/:league_id", async (req, res, next) => {
     let league_id = req.params.league_id
     let update = req.query.update
     update = update != null && update === 'true'
-    let league = await fbManager.getLeague(league_id)
+    let league = await fbManager.leagues.get(league_id)
     let returnData = {}
     try{
         if(update){
@@ -160,6 +160,7 @@ app.get("/players/:league_id", async (req, res, next) => {
         res.json(returnData)
     }
     catch(data){
+        console.log(data)
         returnData.players = null
         returnData.message = data.err
         returnData.error = true

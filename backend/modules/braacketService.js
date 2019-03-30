@@ -27,6 +27,7 @@ exports.BraacketService = class BraacketService extends Service {
                         const $ = cheerio.load(body)
                         let dashboard_values = $("div.panel-body").find("div.my-dashboard-values-sub")
                         let dashboard_rankings = $("div.panel-body").find("div.my-dashboard-values-main:contains('out of')")
+                        let check_not_avaliable = $("div.panel-body:contains('Not available.')")
                         if (dashboard_values.length > 0 && dashboard_rankings.length > 0) {
                             player.rank = parseInt(dashboard_rankings.text().trim().match(new RegExp('[0-9]+'))[0])
                             dashboard_values.each(function (i, elem) {
@@ -38,18 +39,30 @@ exports.BraacketService = class BraacketService extends Service {
                                 }
                             })
                             player.updated = true
-                            resolve(player)
+                            resolve({
+                                player: player,
+                                not_avaliable: false
+                            })
                         }
                         else{
-                            reject(player)
+                            reject({
+                                player: player,
+                                not_avaliable: check_not_avaliable.length > 0
+                            })
                         }
                     }
                     else{
-                        reject(player)
+                        reject({
+                            player: player,
+                            not_avaliable: false
+                        })
                     }
                 })
             } else {
-                resolve(player)
+                resolve({
+                    player: player,
+                    not_avaliable: false
+                })
             }
         }).catch(function(p_err){
             return p_err
@@ -59,7 +72,17 @@ exports.BraacketService = class BraacketService extends Service {
     updatePlayerData(timeout, temp_players, callback) {
         timeoutPromise(timeout, (resolve, reject, endTime) => {
             Promise.all(Object.values(temp_players).map(this.updateBraacketPlayer)).then((values) => {
-                if(values.filter(p => !p.updated).length > 0){
+                temp_players = {}
+                for (var i = values.length - 1; i >= 0; i--) {
+                    let v = values[i]
+                    if (v.not_avaliable) { 
+                        values.splice(i, 1)
+                    }
+                    else{
+                        temp_players[v.player.id] = v.player
+                    }
+                }
+                if(values.filter(v => !v.player.updated).length > 0){
                     reject(endTime - (new Date()).getTime())
                 }
                 else{

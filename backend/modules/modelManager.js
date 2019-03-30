@@ -2,8 +2,9 @@ const NodeCache = require( "node-cache" )
 const AccessLocker = require('./accessLocker').AccessLocker
 
 exports.ModelManager = class ModelManager {
-	constructor(Model, admin, timeout, timecheck){
+	constructor(Model, fbManager, admin, timeout, timecheck){
 		this.admin = admin
+        this.fbManager = fbManager
         this.db = admin.firestore()
 		this.Model = Model
 		this.cache_timer = timeout
@@ -24,7 +25,7 @@ exports.ModelManager = class ModelManager {
         await this.locker.getWriteAccess(model_id)
         let model = this.cache.get(model_id)
         if(model == undefined){
-            model = new this.Model(model_id, this.admin)
+            model = new this.Model(model_id, this.admin, this.fbManager)
             this.cache.set(model_id, model)
         }
         this.locker.stopWriting(model_id)
@@ -45,14 +46,10 @@ exports.ModelManager = class ModelManager {
         await this.locker.getWriteAccess(model_id)
         let model = this.cache.get(model_id)
         if(model.dirty()){
-            await this.saveCachedModel(model)
+            await model.saveCache()
         }
         this.cache.del(model_id)
         this.locker.stopWriting(model_id)
-    }
-
-    async saveCachedModel(model){
-        throw "saveCachedModel not Implemented!"
     }
 
     async onExpire(model_id, model){
