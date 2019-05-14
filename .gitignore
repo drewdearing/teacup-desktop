@@ -8,4 +8,11 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-frontend/electron/.env
+
+#local settings
+/settings.json
+/images
+/labels
+
+#node
+/node_modules
