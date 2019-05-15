@@ -2,29 +2,94 @@ const request = require('request')
 const openSocket = require('socket.io-client')
 const fs = require("fs-extra")
 const path = require('path')
-const settings = require('./settings.json')
-let currentMatch = null
-let bracket = settings.bracket_code
-let user = settings.username
-let key = settings.api_key
-let label_path = settings.output_path
-let instructions = settings.instructions
-let socket = null
-let bracketData = {
+
+var settings = null
+var currentMatch = null
+var bracket = null
+var user = null
+var key = null
+var label_path = null
+var cwd = null
+var instructions = null
+var socket = null
+var bracketData = {
     name: '',
     currentMatch: {
         match_id: null
     }
 }
 
-verifyBracket(bracket, user, key)
+if(process.pkg){
+    cwd = path.dirname(process.execPath)
+}
+else{
+    cwd = process.cwd()
+}
+
+cwd = cwd.replace(/\/?$/, '/')
+
+let settingsFile = cwd + 'settings.json'
+
+fs.readJson(settingsFile, function(err, settingsData) {
+    if(!err){
+        settings = settingsData
+        bracket = settings.bracket_code
+        user = settings.username
+        key = settings.api_key
+        instructions = settings.instructions
+        label_path = settings.output_path.replace(/^\/+/g, '')
+        label_path = cwd + label_path
+        label_path = label_path.replace(/\/?$/, '/')
+        fs.ensureDir(label_path, err => {
+            if(!err){
+                verifyBracket(bracket, user, key)
+            }
+            else{
+                console.log('could not create path: '+label_path)
+            }
+        })
+    }
+    else{
+        console.log("settings.json not found.")
+        let defaultSettings = {
+            username: '',
+            api_key: '',
+            bracket_code: '',
+            output_path: 'labels/',
+            instructions: {
+                name: {
+                    nameLabel: {
+                        type: 'text'
+                    }
+                },
+                score: {
+                    scoreLabel: {
+                        type: 'text'
+                    }
+                }
+            }
+        }
+        let settingsData = JSON.stringify(defaultSettings, null, 2)
+        fs.writeFile(settingsFile, settingsData, (err) => {
+            if (err) {
+                console.log(err)
+            }
+            else{
+                console.log("Successfully wrote to settings.json")
+            }
+            process.exit()
+        })
+    }
+})
 
 async function init(id, user, key){
     return new Promise((resolve, reject) => {
         var path = 'https://teacup-challonge.herokuapp.com/init'
         path = path + '?user=' + user
         path = path + '&key=' + key
-        path = path + '&id='+ id
+        if(id && id !== ''){
+            path = path + '&id='+ id
+        }
         request(path, {json: true}, (err, res, body) => {
             resolve(body)
         })
@@ -53,19 +118,24 @@ async function getCurrentMatch(id){
 
 async function verifyBracket(id, user, key){
     let data = await init(id, user, key)
-    if(data.isAuthenticated && data.isOwner){
-        console.log('user is authenticated.')
-        let tournamentData = await getTournament(id)
-        bracketData.name = tournamentData.tournament.name
-        let item_file = label_path + 'tournament_name.txt'
-        fs.writeFile(item_file, bracketData.name, (err) => {
-            if (err) console.log(err)
-            console.log('Successfully wrote to' + item_file)
-        })
-        let currentMatch = await getCurrentMatch(id)
-        await handleLabelUpdate(currentMatch)
-        socket = openSocket('https://teacup-challonge.herokuapp.com?id='+id)
-        socket.on('current_labels', data => handleLabelUpdate(data));
+    if(data.isAuthenticated){
+        if(data.isOwner){
+            console.log('user is authenticated.')
+            let tournamentData = await getTournament(id)
+            bracketData.name = tournamentData.tournament.name
+            let item_file = label_path + 'tournament_name.txt'
+            fs.writeFile(item_file, bracketData.name, (err) => {
+                if (err) console.log(err)
+                console.log('Successfully wrote to ' + item_file)
+            })
+            let currentMatch = await getCurrentMatch(id)
+            await handleLabelUpdate(currentMatch)
+            socket = openSocket('https://teacup-challonge.herokuapp.com?id='+id)
+            socket.on('current_labels', data => handleLabelUpdate(data));
+        }
+        else{
+            console.log('you are not authorized to view this bracket.')
+        }
     }
     else{
         console.log('could not authenticate')
@@ -87,7 +157,7 @@ async function handleLabelUpdate(nextMatch){
 
         fs.writeFile(round_file, round, (err) => {
             if (err) console.log(err)
-            console.log('Successfully wrote to' + round_file)
+            console.log('Successfully wrote to ' + round_file)
         })
 
         Object.keys(instructions).forEach((label) => {
