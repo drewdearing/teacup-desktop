@@ -16,4 +16,3 @@ yarn-error.log*
 
 #node
 /node_modules
-/build
