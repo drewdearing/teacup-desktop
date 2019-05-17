@@ -13,6 +13,7 @@ class TeacupUI {
         this.win.margined = 1;
         this.win.onClosing(() => libui.stopLoop());
         const hBox = new libui.UiHorizontalBox();
+        const vBox = new libui.UiVerticalBox();
         hBox.padded = true;
         this.username = new libui.UiEntry();
         this.apiKey = new libui.UiEntry();
@@ -31,8 +32,9 @@ class TeacupUI {
             onClicked: (()=>  console.log('wwww'))
         });
         hBox.append(form, 1);
-        hBox.append(loginButton, 0);
-        this.win.setChild(hBox);
+        vBox.append(hBox, 1);
+        vBox.append(loginButton, 1);
+        this.win.setChild(vBox);
     }
 
     start() {
