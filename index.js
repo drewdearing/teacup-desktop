@@ -2,7 +2,10 @@ const request = require('request')
 const openSocket = require('socket.io-client')
 const fs = require("fs-extra")
 const path = require('path')
+const TeacupUI = require('./ui')
 
+const ui = new TeacupUI()
+ui.start()
 var settings = null
 var currentMatch = null
 var bracket = null
