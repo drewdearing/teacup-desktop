@@ -4,8 +4,16 @@ const fs = require("fs-extra")
 const path = require('path')
 const TeacupUI = require('./ui')
 
-const ui = new TeacupUI()
-ui.start()
+if(process.pkg){
+    cwd = path.dirname(process.execPath)
+}
+else{
+    cwd = process.cwd()
+}
+cwd = cwd.replace(/\/?$/, '/')
+
+let settingsFile = cwd + 'settings.json'
+
 var settings = null
 var currentMatch = null
 var bracket = null
@@ -22,16 +30,29 @@ var bracketData = {
     }
 }
 
-if(process.pkg){
-    cwd = path.dirname(process.execPath)
-}
-else{
-    cwd = process.cwd()
-}
+const ui = new TeacupUI()
+ui.setOnLogin((data) => {
+    verifyBracket(data.bracket, data.user, data.key);
+    updateSettings(data);
+});
+ui.start()
 
-cwd = cwd.replace(/\/?$/, '/')
-
-let settingsFile = cwd + 'settings.json'
+function updateSettings(data) {
+    fs.readJson(settingsFile, (err, currentSettings) => {
+        if (!err) {
+            let newSettings = currentSettings;
+            newSettings["bracket_code"] = data.bracket;
+            newSettings["username"] = data.user;
+            newSettings["api_key"] = data.key;
+            newSettings = JSON.stringify(newSettings, null, 2)
+            fs.writeFile(settingsFile, newSettings).then(()=> {
+                console.log("wrote new settings.");
+            }).catch((err) => {
+                console.log("failed to write new settings.");
+            });
+        }
+    });
+}
 
 fs.readJson(settingsFile, function(err, settingsData) {
     if(!err){
@@ -45,6 +66,11 @@ fs.readJson(settingsFile, function(err, settingsData) {
         label_path = label_path.replace(/\/?$/, '/')
         fs.ensureDir(label_path, err => {
             if(!err){
+                ui.setFormText({
+                    bracket: bracket,
+                    user: user,
+                    key: key
+                });
                 verifyBracket(bracket, user, key)
             }
             else{
@@ -54,6 +80,8 @@ fs.readJson(settingsFile, function(err, settingsData) {
     }
     else{
         console.log("settings.json not found.")
+        ui.setMessage('Thanks for using Teacup!\n' +
+                      'Please login to Challonge to start the OBS manager.');
         let defaultSettings = {
             username: '',
             api_key: '',
@@ -80,7 +108,6 @@ fs.readJson(settingsFile, function(err, settingsData) {
             else{
                 console.log("Successfully wrote to settings.json")
             }
-            process.exit()
         })
     }
 })
@@ -123,7 +150,8 @@ async function verifyBracket(id, user, key){
     let data = await init(id, user, key)
     if(data.isAuthenticated){
         if(data.isOwner){
-            console.log('user is authenticated.')
+            console.log('user is authenticated.');
+            ui.setMessage("Successfully logged in.");
             let tournamentData = await getTournament(id)
             bracketData.name = tournamentData.tournament.name
             let item_file = label_path + 'tournament_name.txt'
@@ -142,6 +170,7 @@ async function verifyBracket(id, user, key){
     }
     else{
         console.log('could not authenticate')
+        ui.setMessage("Sorry, login failed. Please check username or API key.");
     }
 }
 
