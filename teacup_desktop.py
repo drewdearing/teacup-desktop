@@ -102,6 +102,9 @@ def startFromFile():
                 }
             }
         }
+        label_path = defaultSettings["output_path"].replace(r'^\/+', '')
+        label_path = label_path.replace(r'\/?$', '/')
+        instructions = defaultSettings["instructions"]
         with open(settingsFile, 'w+') as sf:
             settingsData = json.dump(defaultSettings, sf, indent=2)
         print("wrote default settings file")
