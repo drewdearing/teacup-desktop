@@ -10,20 +10,17 @@ field_to_var = {
     'Bracket Code': "bracket"
 }
 
-def create_closing(root, thread):
+def create_closing(root, processes):
     def close():
         root.destroy()
-        if thread:
-            thread.join()
+        processes["sio"].disconnect()
+        processes["thread"].join()
     return close
 
 class TeacupUI:
 
     def __init__(self):
        self.root = Tk()
-       self.thread = None
-       self.root.protocol("WM_DELETE_WINDOW",
-                          create_closing(self.root, self.thread))
        self.strVars = {
             "user": StringVar(),
             "key": StringVar(),
@@ -79,5 +76,6 @@ class TeacupUI:
     def setMessage(self, msg):
         self.messageVar.set(msg)
 
-    def setTeacupThread(self, thread):
-        self.thread = thread
+    def setCleanup(self, processes):
+        self.root.protocol("WM_DELETE_WINDOW",
+                          create_closing(self.root, processes))

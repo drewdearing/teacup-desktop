@@ -216,6 +216,9 @@ ui.setOnLogin(onLogin)
 
 if __name__ == '__main__':
     teacup = Thread(target=startFromFile)
-    ui.setTeacupThread(teacup)
+    ui.setCleanup({
+        "thread": teacup,
+        "sio": sio
+        })
     teacup.start()
     ui.start()
