@@ -8,6 +8,7 @@ from teacup_ui import TeacupUI
 from threading import Thread
 
 # Global Variables
+connected = False
 ui = TeacupUI()
 settingsFile = 'settings.json'
 settings = None
@@ -31,6 +32,12 @@ sio = socketio.Client()
 @sio.on('connect')
 def on_connect():
     print("SocketIO connection established")
+    connected = True
+
+@sio.on('disconnect')
+def on_disconnect():
+    print("SocketIO disconnected")
+    connected = False
 
 @sio.on('current_labels')
 def on_labels(data):
@@ -54,6 +61,7 @@ def startFromFile():
     global user
     global key
     global instructions
+    ui.setMessage('Thanks for using Teacup!\nPlease login to Challonge to begin.')
     try:
         sf = open(settingsFile)
         settings = json.load(sf)
@@ -74,10 +82,8 @@ def startFromFile():
             "user": user,
             "key": key
         })
-        verifyBracket(bracket, user, key)
     except FileNotFoundError:
         print("settings.json not found.")
-        ui.setMessage('Thanks for using Teacup!\nPlease login to Challonge to start the OBS manager.')
         defaultSettings = {
             "username": '',
             "api_key": '',
@@ -132,7 +138,7 @@ def verifyBracket(id, user, key):
     if data["isAuthenticated"]:
         if data["isOwner"]:
             print('user is authenticated.')
-            ui.setMessage("Successfully logged in.\nServing Teacup data to OBS...")
+            ui.setMessage("Successfully logged in.\nServing Teacup data...")
             tournamentData = getTournament(id)
             bracketData["name"] = tournamentData["tournament"]["name"]
             item_file = label_path + 'tournament_name.txt'
@@ -141,7 +147,8 @@ def verifyBracket(id, user, key):
             currentMatch = getCurrentMatch(id)
             handleLabelUpdate(currentMatch)
             socketUrl = f'https://teacup-challonge.herokuapp.com?id={id}'
-            sio.connect(socketUrl)
+            if not connected:
+                sio.connect(socketUrl)
         else:
             print("not allowed")
             ui.setMessage('You are not authorized to view this bracket.')
@@ -203,6 +210,7 @@ ui.setOnLogin(onLogin)
 
 
 if __name__ == '__main__':
-    thread = Thread(target=startFromFile)
-    thread.start()
+    teacup = Thread(target=startFromFile)
+    ui.setTeacupThread(teacup)
+    teacup.start()
     ui.start()

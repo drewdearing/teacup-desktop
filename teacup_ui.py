@@ -10,10 +10,20 @@ field_to_var = {
     'Bracket Code': "bracket"
 }
 
+def create_closing(root, thread):
+    def close():
+        root.destroy()
+        if thread:
+            thread.join()
+    return close
+
 class TeacupUI:
 
     def __init__(self):
        self.root = Tk()
+       self.thread = None
+       self.root.protocol("WM_DELETE_WINDOW",
+                          create_closing(self.root, self.thread))
        self.strVars = {
             "user": StringVar(),
             "key": StringVar(),
@@ -33,7 +43,7 @@ class TeacupUI:
        b1.grid(row=4, column=0, sticky="nsew")
        self.root.grid_rowconfigure(3, weight=1)
        self.root.grid_columnconfigure(0, weight=1)
-       self.root.title("Teacup - OBS Manager")
+       self.root.title("Teacup - Stream Manager")
        self.root.geometry('600x200')
 
     def makeform(self):
@@ -68,3 +78,6 @@ class TeacupUI:
 
     def setMessage(self, msg):
         self.messageVar.set(msg)
+
+    def setTeacupThread(self, thread):
+        self.thread = thread
