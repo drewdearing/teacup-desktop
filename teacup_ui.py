@@ -19,10 +19,14 @@ class TeacupUI:
             "key": StringVar(),
             "bracket": StringVar()
        }
+       self.messageVar = StringVar()
        ents = self.makeform()
        self.onLogin = lambda e: print(e)
        self.root.bind('<Return>', (lambda event, e=ents: self.onLogin(e)))
-       text = Message(self.root, text="Initializing Teacup...", width=300)
+       text = Message(self.root,
+                      text="Initializing Teacup...",
+                      width=300,
+                      textvariable=self.messageVar)
        text.grid(row=3, column=0, sticky="nsew")
        b1 = Button(self.root, text='Login',
               command=(lambda e=ents: self.onLogin(e)))
@@ -61,3 +65,6 @@ class TeacupUI:
     def setFormText(self, data):
         for var, text in data.items():
             self.strVars[var].set(text)
+
+    def setMessage(self, msg):
+        self.messageVar.set(msg)

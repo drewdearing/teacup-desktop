@@ -5,8 +5,10 @@ import socketio
 
 from shutil import copyfile
 from teacup_ui import TeacupUI
+from threading import Thread
 
 # Global Variables
+ui = TeacupUI()
 settingsFile = 'settings.json'
 settings = None
 currentMatch = None
@@ -67,16 +69,15 @@ def startFromFile():
                 os.mkdir(label_path)
             except FileExistsError:
                 print("Could not create path.")
-        # ui.setFormText({
-        #     bracket: bracket,
-        #     user: user,
-        #     key: key
-        # })
+        ui.setFormText({
+            "bracket": bracket,
+            "user": user,
+            "key": key
+        })
         verifyBracket(bracket, user, key)
     except FileNotFoundError:
         print("settings.json not found.")
-        # ui.setMessage('Thanks for using Teacup!\n' +
-        #               'Please login to Challonge to start the OBS manager.')
+        ui.setMessage('Thanks for using Teacup!\nPlease login to Challonge to start the OBS manager.')
         defaultSettings = {
             "username": '',
             "api_key": '',
@@ -130,7 +131,7 @@ def verifyBracket(id, user, key):
     if data["isAuthenticated"]:
         if data["isOwner"]:
             print('user is authenticated.')
-            #ui.setMessage("Successfully logged in.")
+            ui.setMessage("Successfully logged in.\nServing Teacup data to OBS...")
             tournamentData = getTournament(id)
             bracketData["name"] = tournamentData["tournament"]["name"]
             item_file = label_path + 'tournament_name.txt'
@@ -141,10 +142,11 @@ def verifyBracket(id, user, key):
             socketUrl = f'https://teacup-challonge.herokuapp.com?id={id}'
             sio.connect(socketUrl)
         else:
-            print('you are not authorized to view this bracket.')
+            print("not allowed")
+            ui.setMessage('You are not authorized to view this bracket.')
     else:
         print('could not authenticate')
-        #ui.setMessage("Sorry, login failed. Please check username or API key.")
+        ui.setMessage("Sorry, login failed.\nPlease check username or API key.")
 
 def handleLabelUpdate(nextMatch):
     bracketData["currentMatch"] = nextMatch
@@ -187,8 +189,8 @@ def handleInstruction(instruction, value, participant):
                 itf.write(str(value))
 
 # UI setup
-ui = TeacupUI()
 def onLogin(entries):
+    ui.setMessage("Authenticating...")
     data = {
         "user": entries["Challonge Username"].get(),
         "key": entries["API Key"].get(),
@@ -196,9 +198,10 @@ def onLogin(entries):
     }
     verifyBracket(data["bracket"], data["user"], data["key"])
     updateSettings(data)
-
 ui.setOnLogin(onLogin)
-ui.start()
+
 
 if __name__ == '__main__':
-    startFromFile()
+    thread = Thread(target=startFromFile)
+    thread.start()
+    ui.start()
