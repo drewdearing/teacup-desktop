@@ -138,7 +138,7 @@ def verifyBracket(id, user, key):
     if data["isAuthenticated"]:
         if data["isOwner"]:
             print('user is authenticated.')
-            ui.setMessage("Successfully logged in.\nServing Teacup data...")
+            ui.setMessage(f'Successfully logged in.\nServing bracket data to "{label_path}"...')
             tournamentData = getTournament(id)
             bracketData["name"] = tournamentData["tournament"]["name"]
             item_file = label_path + 'tournament_name.txt'
