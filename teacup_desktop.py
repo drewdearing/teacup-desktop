@@ -46,6 +46,12 @@ def updateSettings(data):
         json.dump(currentSettings, sf, indent=2)
 
 def startFromFile():
+    global label_path
+    global settings
+    global bracket
+    global user
+    global key
+    global instructions
     try:
         sf = open(settingsFile)
         settings = json.load(sf)
@@ -178,7 +184,7 @@ def handleInstruction(instruction, value, participant):
         elif item["type"] == 'text':
             item_file = f'{label_path}{item_id}.txt'
             with open(item_file, 'w+') as itf:
-                itf.write(value)
+                itf.write(str(value))
 
 if __name__ == '__main__':
     # const ui = new TeacupUI()
