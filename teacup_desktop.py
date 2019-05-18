@@ -126,6 +126,7 @@ def getCurrentMatch(id):
     return get_data(path, 'currentMatch')
 
 def verifyBracket(id, user, key):
+    global currentMatch
     data = init(id, user, key)
     if data["isAuthenticated"]:
         if data["isOwner"]:
