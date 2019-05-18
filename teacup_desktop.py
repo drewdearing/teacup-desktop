@@ -2,11 +2,13 @@ import json
 import os
 import requests
 import socketio
+
+from shutil import copyfile
 #const path = require('path')
 #const TeacupUI = require('./ui')
 
+# Global Variables
 settingsFile = 'settings.json'
-
 settings = None
 currentMatch = None
 bracket = None
@@ -22,13 +24,18 @@ bracketData = {
     }
 }
 
-# const ui = new TeacupUI()
-# ui.setOnLogin((data) => {
-#     verifyBracket(data.bracket, data.user, data.key);
-#     updateSettings(data);
-# });
-# ui.start()
+# SocketIO config
+sio = socketio.Client()
 
+@sio.on('connect')
+def on_connect():
+    print("SocketIO connection established")
+
+@sio.on('current_labels')
+def on_labels(data):
+    handleLabelUpdate(data)
+
+# Helper functions
 def updateSettings(data):
     currentSettings = None
     with open(settingsFile) as sf:
@@ -59,12 +66,12 @@ def startFromFile():
         #     bracket: bracket,
         #     user: user,
         #     key: key
-        # });
+        # })
         verifyBracket(bracket, user, key)
     except FileNotFoundError:
         print("settings.json not found.")
         # ui.setMessage('Thanks for using Teacup!\n' +
-        #               'Please login to Challonge to start the OBS manager.');
+        #               'Please login to Challonge to start the OBS manager.')
         defaultSettings = {
             "username": '',
             "api_key": '',
@@ -85,126 +92,100 @@ def startFromFile():
         }
         with open(settingsFile, 'w+') as sf:
             settingsData = json.dump(defaultSettings, sf, indent=2)
+        print("wrote default settings file")
 
-async function init(id, user, key){
-    return new Promise((resolve, reject) => {
-        var path = 'https://teacup-challonge.herokuapp.com/init'
-        path = path + '?user=' + user
-        path = path + '&key=' + key
-        if(id && id !== ''){
-            path = path + '&id='+ id
-        }
-        request(path, {json: true}, (err, res, body) => {
-            resolve(body)
-        })
-    })
-}
+def get_data(url, name=None):
+    if name is None:
+        name = url
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return json.loads(response.content)
+    except HTTPError as h_err:
+        print(f'HTTP error occured for "{name}": {h_err}')
+    except Exception as err:
+        print(f'Error occured for "{name}" request: {err}')
 
-async function getTournament(id){
-    return new Promise((resolve, reject) => {
-        var path = 'https://teacup-challonge.herokuapp.com/tournament'
-        path = path + '?id='+ id
-        request(path, {json: true}, (err, res, body) => {
-            resolve(body)
-        })
-    })
-}
+def init(id, user, key):
+    path = f'https://teacup-challonge.herokuapp.com/init?user={user}&key={key}'
+    if id and id != '':
+        path = f'{path}&id={id}'
+    return get_data(path, 'init')
 
-async function getCurrentMatch(id){
-    return new Promise((resolve, reject) => {
-        var path = 'https://teacup-challonge.herokuapp.com/currentMatch'
-        path = path + '?id='+ id
-        request(path, {json: true}, (err, res, body) => {
-            resolve(body)
-        })
-    })
-}
+def getTournament(id):
+        path = f'https://teacup-challonge.herokuapp.com/tournament?id={id}'
+        return get_data(path, 'tournament')
 
-async function verifyBracket(id, user, key){
-    let data = await init(id, user, key)
-    if(data.isAuthenticated){
-        if(data.isOwner){
-            console.log('user is authenticated.');
-            ui.setMessage("Successfully logged in.");
-            let tournamentData = await getTournament(id)
-            bracketData.name = tournamentData.tournament.name
-            let item_file = label_path + 'tournament_name.txt'
-            fs.writeFile(item_file, bracketData.name, (err) => {
-                if (err) console.log(err)
-                console.log('Successfully wrote to ' + item_file)
-            })
-            let currentMatch = await getCurrentMatch(id)
-            await handleLabelUpdate(currentMatch)
-            socket = openSocket('https://teacup-challonge.herokuapp.com?id='+id)
-            socket.on('current_labels', data => handleLabelUpdate(data));
-        }
-        else{
-            console.log('you are not authorized to view this bracket.')
-        }
-    }
-    else{
-        console.log('could not authenticate')
-        ui.setMessage("Sorry, login failed. Please check username or API key.");
-    }
-}
+def getCurrentMatch(id):
+    path = f'https://teacup-challonge.herokuapp.com/currentMatch?id={id}'
+    return get_data(path, 'currentMatch')
 
-async function handleLabelUpdate(nextMatch){
-    bracketData.currentMatch = nextMatch
-    if(nextMatch != null && nextMatch.match_id != null){
-        let round = nextMatch.round
-        let round_file = label_path + 'round.txt'
-        let participant1_id = nextMatch.participant1
-        let participant2_id = nextMatch.participant2
+def verifyBracket(id, user, key):
+    data = init(id, user, key)
+    if data["isAuthenticated"]:
+        if data["isOwner"]:
+            print('user is authenticated.')
+            #ui.setMessage("Successfully logged in.")
+            tournamentData = getTournament(id)
+            bracketData["name"] = tournamentDatatournament["name"]
+            item_file = label_path + 'tournament_name.txt'
+            with open(item_file, 'w+') as itf:
+                itf.write(bracketData["name"])
+            currentMatch = getCurrentMatch(id)
+            handleLabelUpdate(currentMatch)
+            socketUrl = f'https://teacup-challonge.herokuapp.com?id={id}'
+            sio.connect(socketUrl)
+        else:
+            print('you are not authorized to view this bracket.')
+    else:
+        print('could not authenticate')
+        #ui.setMessage("Sorry, login failed. Please check username or API key.")
 
-        let participants = [
-            nextMatch.participants[participant1_id],
-            nextMatch.participants[participant2_id]
+def handleLabelUpdate(nextMatch):
+    bracketData["currentMatch"] = nextMatch
+    if nextMatch is not None and nextMatch["match_id"] is not None:
+        round = nextMatch["round"]
+        round_file = f'{label_path}round.txt'
+        participant1_id = nextMatch["participant1"]
+        participant2_id = nextMatch["participant2"]
+        participants = [
+            nextMatch["participants"][participant1_id],
+            nextMatch["participants"][participant2_id]
         ]
-
-        fs.writeFile(round_file, round, (err) => {
-            if (err) console.log(err)
-            console.log('Successfully wrote to ' + round_file)
-        })
-
-        Object.keys(instructions).forEach((label) => {
-            let instruction = instructions[label]
-            for (var i = 0; i < 2; i++) {
-                let participant = participants[i]
-                if(label in participant){
-                    let value = participant[label]
+        with open(round_file, 'w+') as rf:
+            rf.write(round)
+        for label in instructions.keys():
+            instruction = instructions[label]
+            for i in range(2):
+                participant = participants[i]
+                if label in participant:
+                    value = participant[label]
                     handleInstruction(instruction, value, i)
-                }
-            }
-        })
-    }
-}
 
-async function handleInstruction(instruction, value, participant){
-    Object.keys(instruction).forEach((instructionItem) => {
-        let item_id = instructionItem+String(participant)
-        let item = instruction[instructionItem]
-        if(item.type == 'image'){
-            if (value in item.options){
-                let image = item.options[value]
-                let ext = path.extname(image)
-                let item_file = label_path + item_id + ext
-                try{
-                    fs.copySync(image, item_file)
-                    console.log("Successfully wrote to "+item_file)
-                } catch(err) {
-                    console.log("Error writing to "+item_file)
-                }
-            }
-        }
-        else if (item.type == 'text'){
-            let item_file = label_path + item_id + '.txt'
-            fs.writeFile(item_file, value, (err) => {
-                if (err) console.log(err)
-                console.log("Successfully wrote to "+ item_file)
-            })
-        }
-    })
-}
+def handleInstruction(instruction, value, participant):
+    for instructionItem in instruction.keys():
+        item_id = f'{instructionItem}{str(participant)}'
+        item = instruction[instructionItem]
+        if item["type"] == 'image':
+            if value in item["options"]:
+                image = item["options"][value]
+                file_name, ext = os.path.splitext(image)
+                item_file = f'{label_path}{item_id}{ext}'
+                try:
+                    copyfile(image, item_file)
+                    print("Successfully wrote to " + item_file)
+                except:
+                    print("Error writing to " + item_file)
+        elif item["type"] == 'text':
+            item_file = f'{label_path}{item_id}.txt'
+            with open(item_file, 'w+') as itf:
+                itf.write(value)
 
 if __name__ == '__main__':
+    # const ui = new TeacupUI()
+    # ui.setOnLogin((data) => {
+    #     verifyBracket(data.bracket, data.user, data.key)
+    #     updateSettings(data)
+    # })
+    # ui.start()
     startFromFile()
