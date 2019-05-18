@@ -31,11 +31,13 @@ sio = socketio.Client()
 
 @sio.on('connect')
 def on_connect():
+    global connected
     print("SocketIO connection established")
     connected = True
 
 @sio.on('disconnect')
 def on_disconnect():
+    global connected
     print("SocketIO disconnected")
     connected = False
 
