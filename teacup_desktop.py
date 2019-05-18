@@ -4,7 +4,6 @@ import requests
 import socketio
 
 from shutil import copyfile
-#const path = require('path')
 #const TeacupUI = require('./ui')
 
 # Global Variables
@@ -127,7 +126,7 @@ def verifyBracket(id, user, key):
             print('user is authenticated.')
             #ui.setMessage("Successfully logged in.")
             tournamentData = getTournament(id)
-            bracketData["name"] = tournamentDatatournament["name"]
+            bracketData["name"] = tournamentData["tournament"]["name"]
             item_file = label_path + 'tournament_name.txt'
             with open(item_file, 'w+') as itf:
                 itf.write(bracketData["name"])
