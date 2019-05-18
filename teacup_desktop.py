@@ -4,7 +4,7 @@ import requests
 import socketio
 
 from shutil import copyfile
-#const TeacupUI = require('./ui')
+from teacup_ui import TeacupUI
 
 # Global Variables
 settingsFile = 'settings.json'
@@ -180,11 +180,19 @@ def handleInstruction(instruction, value, participant):
             with open(item_file, 'w+') as itf:
                 itf.write(value)
 
+# UI setup
+ui = TeacupUI()
+def onLogin(entries):
+    data = {
+        "user": entries["Challonge Username"].get(),
+        "key": entries["API Key"].get(),
+        "bracket": entries["Bracket Code"].get()
+    }
+    verifyBracket(data["bracket"], data["user"], data["key"])
+    updateSettings(data)
+
+ui.setOnLogin(onLogin)
+ui.start()
+
 if __name__ == '__main__':
-    # const ui = new TeacupUI()
-    # ui.setOnLogin((data) => {
-    #     verifyBracket(data.bracket, data.user, data.key)
-    #     updateSettings(data)
-    # })
-    # ui.start()
     startFromFile()
