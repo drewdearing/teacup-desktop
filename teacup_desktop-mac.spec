@@ -14,7 +14,7 @@ a = Analysis(['teacup_desktop.py'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher,
-             noarchive=False)
+             noarchive=True)
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
@@ -22,14 +22,14 @@ exe = EXE(pyz,
           a.binaries,
           a.zipfiles,
           a.datas,
-          [],
+          [('v', None, 'OPTION')],
           name='teacup_desktop',
-          debug=False,
+          debug=True,
           bootloader_ignore_signals=False,
           strip=False,
-          upx=False,
+          upx=True,
           runtime_tmpdir=None,
-          console=False , icon='icon.icns')
+          console=True , icon='icon.icns')
 app = BUNDLE(exe,
              name='teacup_desktop.app',
              icon='icon.icns',

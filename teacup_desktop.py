@@ -1,16 +1,17 @@
 import json
 import os
+import sys
 import requests
 import socketio
 
 from shutil import copyfile
-from teacup_ui import TeacupUI
+from teacup_ui import TeacupUI, resource_path
 from threading import Thread
 
 # Global Variables
 connected = False
 ui = TeacupUI()
-settingsFile = 'settings.json'
+settingsFile = resource_path('settings.json')
 settings = None
 currentMatch = None
 bracket = None
@@ -73,12 +74,8 @@ def startFromFile():
         key = settings["api_key"]
         instructions = settings["instructions"]
         label_path = settings["output_path"].replace(r'^\/+', '')
-        label_path = label_path.replace(r'\/?$', '/')
-        if not os.path.exists(label_path):
-            try:
-                os.mkdir(label_path)
-            except FileExistsError:
-                print("Could not create path.")
+        label_path = resource_path(label_path)
+        label_path = os.path.join(label_path, '')
         ui.setFormText({
             "bracket": bracket,
             "user": user,
@@ -105,11 +102,17 @@ def startFromFile():
             }
         }
         label_path = defaultSettings["output_path"].replace(r'^\/+', '')
-        label_path = label_path.replace(r'\/?$', '/')
+        label_path = resource_path(label_path)
+        label_path = os.path.join(label_path, '')
         instructions = defaultSettings["instructions"]
         with open(settingsFile, 'w+') as sf:
             settingsData = json.dump(defaultSettings, sf, indent=2)
         print("wrote default settings file")
+    if not os.path.exists(label_path):
+        try:
+            os.makedirs(label_path)
+        except FileExistsError:
+            print("Could not create path.")
 
 def get_data(url, name=None):
     if name is None:

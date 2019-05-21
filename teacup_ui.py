@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # Taken from https://www.python-course.eu/tkinter_entry_widgets.php
-import os
+import sys, os
 from tkinter import *
 
 fields = ('Challonge Username', 'API Key', 'Bracket Code')
@@ -11,12 +11,14 @@ field_to_var = {
 }
 
 def resource_path(relative_path):
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
+    if getattr(sys, 'frozen', False):
+        # Uncomment line for Mac Path
+        # application_path = os.path.abspath(os.path.dirname(sys.executable)+'/../../../')
+        # Uncomment line for Windows / Linux
+        application_path = sys._MEIPASS
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(application_path, relative_path)
 
 def create_closing(root, processes):
     def close():
