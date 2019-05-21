@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # Taken from https://www.python-course.eu/tkinter_entry_widgets.php
-
+import os
 from tkinter import *
 
 fields = ('Challonge Username', 'API Key', 'Bracket Code')
@@ -9,6 +9,14 @@ field_to_var = {
     'API Key': "key",
     'Bracket Code': "bracket"
 }
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 def create_closing(root, processes):
     def close():
@@ -41,6 +49,8 @@ class TeacupUI:
        self.root.grid_rowconfigure(3, weight=1)
        self.root.grid_columnconfigure(0, weight=1)
        self.root.title("Teacup - Stream Manager")
+       img = PhotoImage(file=resource_path("icon.png"))
+       self.root.tk.call('wm','iconphoto', self.root._w, img)
        self.root.geometry('600x200')
 
     def makeform(self):
