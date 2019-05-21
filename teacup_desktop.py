@@ -124,17 +124,17 @@ def get_data(url, name=None):
         print(f'Error occured for "{name}" request: {err}')
 
 def init(id, user, key):
-    path = f'https://teacup-challonge.herokuapp.com/init?user={user}&key={key}'
+    path = f'https://teacup-gg.herokuapp.com/init?user={user}&key={key}'
     if id and id != '':
         path = f'{path}&id={id}'
     return get_data(path, 'init')
 
 def getTournament(id):
-        path = f'https://teacup-challonge.herokuapp.com/tournament?id={id}'
+        path = f'https://teacup-gg.herokuapp.com/tournament?id={id}'
         return get_data(path, 'tournament')
 
 def getCurrentMatch(id):
-    path = f'https://teacup-challonge.herokuapp.com/currentMatch?id={id}'
+    path = f'https://teacup-gg.herokuapp.com/currentMatch?id={id}'
     return get_data(path, 'currentMatch')
 
 def verifyBracket(id, user, key):
@@ -151,7 +151,7 @@ def verifyBracket(id, user, key):
                 itf.write(bracketData["name"])
             currentMatch = getCurrentMatch(id)
             handleLabelUpdate(currentMatch)
-            socketUrl = f'https://teacup-challonge.herokuapp.com?id={id}'
+            socketUrl = f'https://teacup-gg.herokuapp.com?id={id}'
             if not connected:
                 sio.connect(socketUrl)
         else:
