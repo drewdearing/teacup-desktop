@@ -2,6 +2,9 @@ const request = require('request')
 const openSocket = require('socket.io-client')
 const fs = require("fs-extra")
 const path = require('path')
+const { default: SlippiGame } = require('slp-parser-js')
+const chokidar = require('chokidar')
+const _ = require('lodash')
 
 var settings = null
 var currentMatch = null
@@ -84,7 +87,7 @@ fs.readJson(settingsFile, function(err, settingsData) {
 
 async function init(id, user, key){
     return new Promise((resolve, reject) => {
-        var path = 'https://teacup-challonge.herokuapp.com/init'
+        var path = 'https://teacup-gg.herokuapp.com/init'
         path = path + '?user=' + user
         path = path + '&key=' + key
         if(id && id !== ''){
@@ -98,7 +101,7 @@ async function init(id, user, key){
 
 async function getTournament(id){
     return new Promise((resolve, reject) => {
-        var path = 'https://teacup-challonge.herokuapp.com/tournament'
+        var path = 'https://teacup-gg.herokuapp.com/tournament'
         path = path + '?id='+ id
         request(path, {json: true}, (err, res, body) => {
             resolve(body)
@@ -108,7 +111,7 @@ async function getTournament(id){
 
 async function getCurrentMatch(id){
     return new Promise((resolve, reject) => {
-        var path = 'https://teacup-challonge.herokuapp.com/currentMatch'
+        var path = 'https://teacup-gg.herokuapp.com/currentMatch'
         path = path + '?id='+ id
         request(path, {json: true}, (err, res, body) => {
             resolve(body)
@@ -130,7 +133,7 @@ async function verifyBracket(id, user, key){
             })
             let currentMatch = await getCurrentMatch(id)
             await handleLabelUpdate(currentMatch)
-            socket = openSocket('https://teacup-challonge.herokuapp.com?id='+id)
+            socket = openSocket('https://teacup-gg.herokuapp.com?id='+id)
             socket.on('current_labels', data => handleLabelUpdate(data));
         }
         else{
@@ -199,6 +202,8 @@ async function handleInstruction(instruction, value, participant){
         }
     })
 }
+
+
 
 
 
