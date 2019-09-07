@@ -8,6 +8,37 @@ const _ = require('lodash')
 
 const gameByPath = {}
 
+const characterCodes = [
+    "Captain Falcon",
+    "Donkey Kong",
+    "Fox",
+    "Mr. Game & Watch",
+    "Kirby",
+    "Bowser",
+    "Link",
+    "Luigi",
+    "Mario",
+    "Marth",
+    "Mewtwo",
+    "Ness",
+    "Peach",
+    "Pikachu",
+    "Ice Climbers",
+    "Jigglypuff",
+    "Samus",
+    "Yoshi",
+    "Zelda",
+    "Sheik",
+    "Falco",
+    "Young Link",
+    "Dr. Mario",
+    "Roy",
+    "Pichu",
+    "Ganondorf"
+]
+
+var currentGameSettings = null;
+
 var settings = null
 var currentMatch = null
 var bracket = null
@@ -139,6 +170,25 @@ async function getCurrentMatch(id){
     })
 }
 
+async function updateMatch(){
+    return new Promise((resolve, reject) => {
+        var path = 'https://teacup-gg.herokuapp.com/match/update'
+        options = {
+            uri: path,
+            method: 'PUT',
+            json: bracketData.currentMatch
+        }
+        request(options, (err, res, body) => {
+            if(err){
+                console.log("Error updating match on Teacup.gg")
+            }
+            else{
+                console.log("Successfully updated match on Teacup.gg")
+            }
+        })
+    })
+}
+
 async function verifyBracket(id, user, key){
     let data = await init(id, user, key)
     if(data.isAuthenticated){
@@ -194,6 +244,7 @@ async function handleLabelUpdate(nextMatch){
                 }
             }
         })
+        setGameSettings()
     }
 }
 
@@ -226,7 +277,6 @@ async function handleInstruction(instruction, value, participant){
 
 async function handleSlippiUpdate(path){
     const start = Date.now();
-    console.log("hi");
     let gameState, settings, stats, frames, latestFrame, gameEnd;
     try {
         let game = _.get(gameByPath, [path, 'game']);
@@ -254,37 +304,94 @@ async function handleSlippiUpdate(path){
 
     if (!gameState.settings && settings) {
         console.log(`[Game Start] New game has started`);
-        console.log(settings);
+        //console.log(settings);
         gameState.settings = settings;
+        currentGameSettings = settings;
+        if(bracketData.currentMatch.match_id != null){
+            setGameSettings();
+        }
     }
 
-    console.log(`We have ${_.size(frames)} frames.`);
+    //console.log(`We have ${_.size(frames)} frames.`);
     _.forEach(settings.players, player => {
         const frameData = _.get(latestFrame, ['players', player.playerIndex]);
         if (!frameData) {
             return;
         }
 
-        console.log(
+        /*console.log(
             `[Port ${player.port}] ${frameData.post.percent.toFixed(1)}% | ` +
             `${frameData.post.stocksRemaining} stocks`
-            );
+            );*/
     });
 
     if (gameEnd) {
-    // NOTE: These values and the quitter index will not work until 2.0.0 recording code is
-    // NOTE: used. This code has not been publicly released yet as it still has issues
-    const endTypes = {
-        1: "TIME!",
-        2: "GAME!",
-        7: "No Contest",
-    };
+        const endTypes = {
+            1: "TIME!",
+            2: "GAME!",
+            7: "No Contest",
+        };
 
-    const endMessage = _.get(endTypes, gameEnd.gameEndMethod) || "Unknown";
-
-    const lrasText = gameEnd.gameEndMethod === 7 ? ` | Quitter Index: ${gameEnd.lrasInitiatorIndex}` : "";
-    console.log(`[Game Complete] Type: ${endMessage}${lrasText}`);
+        const endMessage = _.get(endTypes, gameEnd.gameEndMethod) || "Unknown";
+        const lrasText = gameEnd.gameEndMethod === 7 ? ` | Quitter Index: ${gameEnd.lrasInitiatorIndex}` : "";
+        console.log(`[Game Complete] Type: ${endMessage}${lrasText}`);
+        currentGameSettings = null;
     }
 
-    console.log(`Read took: ${Date.now() - start} ms`);
+    //console.log(`Read took: ${Date.now() - start} ms`);
+}
+
+async function setGameSettings(){
+    if(bracketData.currentMatch.match_id != null && currentGameSettings != null){
+        var changed = false
+        let participant1_id = bracketData.currentMatch.participant1
+        let participant2_id = bracketData.currentMatch.participant2
+        let participants = [
+            bracketData.currentMatch.participants[participant1_id],
+            bracketData.currentMatch.participants[participant2_id]
+        ]
+        if(currentGameSettings.isTeams){
+            participants.forEach((participant) => {
+                currentGameSettings.players.forEach((teammate) => {
+                    if(participant.member1Port.includes(teammate.port.toString())){
+                        if(participant.member1Character !== characterCodes[teammate.characterId]){
+                            changed = true
+                            participant.member1Character = characterCodes[teammate.characterId]
+                        }
+                    }
+                    else if(participant.member2Port.includes(teammate.port.toString())){
+                        if(participant.member2Character !== characterCodes[teammate.characterId]){
+                            changed = true
+                            participant.member2Character = characterCodes[teammate.characterId]
+                        }
+                    }
+                })
+            })
+        }
+        else{
+            participants.forEach((participant) => {
+                _.forEach(currentGameSettings.players, player => {
+                    if(participant.port.includes(player.port.toString())){
+                        if(participant.character !== characterCodes[player.characterId]){
+                            changed = true
+                            participant.character = characterCodes[player.characterId]
+                        }
+                    }
+                })
+            })
+        }
+        if(changed){
+            updateMatch()
+        }
+    }
+}
+
+function teamColorToCode(color){
+    if(color === "Red"){
+        return 0;
+    }
+    else if(color === "Blue"){
+        return 1;
+    }
+    return 2;
 }
