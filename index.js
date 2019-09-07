@@ -6,15 +6,19 @@ const { default: SlippiGame } = require('slp-parser-js')
 const chokidar = require('chokidar')
 const _ = require('lodash')
 
+const gameByPath = {}
+
 var settings = null
 var currentMatch = null
 var bracket = null
 var user = null
 var key = null
 var label_path = null
+var slp_path = null
 var cwd = null
 var instructions = null
 var socket = null
+var slp_watcher = null
 var bracketData = {
     name: '',
     currentMatch: {
@@ -45,7 +49,23 @@ fs.readJson(settingsFile, function(err, settingsData) {
         label_path = label_path.replace(/\/?$/, '/')
         fs.ensureDir(label_path, err => {
             if(!err){
-                verifyBracket(bracket, user, key)
+                slp_path = settings.slippi_path.replace(/^\/+/g, '')
+                slp_path = cwd + slp_path
+                slp_path = slp_path.replace(/\/?$/, '/')
+                fs.ensureDir(slp_path, err => {
+                    if(!err){
+                        watcher = chokidar.watch(slp_path, {
+                            depth: 0,
+                            persistent: true,
+                            usePolling: true,
+                            ignoreInitial: true,
+                        })
+                        verifyBracket(bracket, user, key)
+                    }
+                    else{
+                        console.log('could not create path: '+slp_path)
+                    }
+                })
             }
             else{
                 console.log('could not create path: '+label_path)
@@ -134,7 +154,8 @@ async function verifyBracket(id, user, key){
             let currentMatch = await getCurrentMatch(id)
             await handleLabelUpdate(currentMatch)
             socket = openSocket('https://teacup-gg.herokuapp.com?id='+id)
-            socket.on('current_labels', data => handleLabelUpdate(data));
+            socket.on('current_labels', data => handleLabelUpdate(data))
+            watcher.on('change', path => handleSlippiUpdate(path))
         }
         else{
             console.log('you are not authorized to view this bracket.')
@@ -203,7 +224,67 @@ async function handleInstruction(instruction, value, participant){
     })
 }
 
+async function handleSlippiUpdate(path){
+    const start = Date.now();
+    console.log("hi");
+    let gameState, settings, stats, frames, latestFrame, gameEnd;
+    try {
+        let game = _.get(gameByPath, [path, 'game']);
+        if (!game) {
+            console.log(`New file at: ${path}`);
+            game = new SlippiGame(path);
+            gameByPath[path] = {
+                game: game,
+                state: {
+                    settings: null,
+                    detectedPunishes: {},
+                }
+            }
+        }
 
+        gameState = _.get(gameByPath, [path, 'state']);
+        settings = game.getSettings();
+        frames = game.getFrames();
+        latestFrame = game.getLatestFrame();
+        gameEnd = game.getGameEnd();
+    } catch (err) {
+        console.log(err);
+        return;
+    }
 
+    if (!gameState.settings && settings) {
+        console.log(`[Game Start] New game has started`);
+        console.log(settings);
+        gameState.settings = settings;
+    }
 
+    console.log(`We have ${_.size(frames)} frames.`);
+    _.forEach(settings.players, player => {
+        const frameData = _.get(latestFrame, ['players', player.playerIndex]);
+        if (!frameData) {
+            return;
+        }
 
+        console.log(
+            `[Port ${player.port}] ${frameData.post.percent.toFixed(1)}% | ` +
+            `${frameData.post.stocksRemaining} stocks`
+            );
+    });
+
+    if (gameEnd) {
+    // NOTE: These values and the quitter index will not work until 2.0.0 recording code is
+    // NOTE: used. This code has not been publicly released yet as it still has issues
+    const endTypes = {
+        1: "TIME!",
+        2: "GAME!",
+        7: "No Contest",
+    };
+
+    const endMessage = _.get(endTypes, gameEnd.gameEndMethod) || "Unknown";
+
+    const lrasText = gameEnd.gameEndMethod === 7 ? ` | Quitter Index: ${gameEnd.lrasInitiatorIndex}` : "";
+    console.log(`[Game Complete] Type: ${endMessage}${lrasText}`);
+    }
+
+    console.log(`Read took: ${Date.now() - start} ms`);
+}

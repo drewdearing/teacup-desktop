@@ -13,6 +13,7 @@ yarn-error.log*
 /settings.json
 /images
 /labels
+/slippi
 
 #node
 /node_modules
