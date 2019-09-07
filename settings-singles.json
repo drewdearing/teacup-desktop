@@ -1,0 +1,66 @@
+{
+  "username": "drewdearing",
+  "api_key": "cvwhagMY6q45ci01n6ayl5AnJJe34vdHhTUbhjFO",
+  "bracket_code": "austinmelee-kam7singles",
+  "output_path": "labels/",
+  "slippi_path": "slippi/",
+  "instructions": {
+    "character": {
+      "characterImage": {
+        "type": "image",
+        "options": {
+          "Bowser": "./characters/Bowser.png",
+          "Captain Falcon": "./characters/Cap.png",
+          "Donkey Kong": "./characters/DK.png",
+          "Dr. Mario": "./characters/Doc.png",
+          "Falco": "./characters/Falco.png",
+          "Fox": "./characters/Fox.png",
+          "Ganondorf": "./characters/Ganon.png",
+          "Mr. Game & Watch": "./characters/GW.png",
+          "Ice Climbers": "./characters/ICS.png",
+          "Kirby": "./characters/Kirby.png",
+          "Link": "./characters/Link.png",
+          "Luigi": "./characters/Luigi.png",
+          "Mario": "./characters/Mario.png",
+          "Marth": "./characters/Marth.png",
+          "Mewtwo": "./characters/Mewtwo.png",
+          "Ness": "./characters/Ness.png",
+          "Peach": "./characters/Peach.png",
+          "Pichu": "./characters/Pichu.png",
+          "Pikachu": "./characters/Pikachu.png",
+          "Jigglypuff": "./characters/Puff.png",
+          "Roy": "./characters/Roy.png",
+          "Samus": "./characters/Samus.png",
+          "Sheik": "./characters/Sheik.png",
+          "Yoshi": "./characters/Yoshi.png",
+          "Young Link": "./characters/YoungLink.png",
+          "Zelda": "./characters/Zelda.png"
+        }
+      }
+    },
+    "name": {
+      "name": {
+        "type": "text"
+      }
+    },
+    "score": {
+      "score": {
+        "type": "text"
+      }
+    },
+    "port": {
+      "portImage": {
+        "type": "image",
+        "options": {
+          "Port 1": "./ports/1.png",
+          "Port 2": "./ports/2.png",
+          "Port 3": "./ports/3.png",
+          "Port 4": "./ports/4.png"
+        }
+      },
+      "port": {
+        "type": "text"
+      }
+    }
+  }
+}

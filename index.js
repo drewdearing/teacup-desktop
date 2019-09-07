@@ -385,13 +385,3 @@ async function setGameSettings(){
         }
     }
 }
-
-function teamColorToCode(color){
-    if(color === "Red"){
-        return 0;
-    }
-    else if(color === "Blue"){
-        return 1;
-    }
-    return 2;
-}
