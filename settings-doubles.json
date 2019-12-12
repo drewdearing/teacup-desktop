@@ -1,7 +1,7 @@
 {
   "username": "drewdearing",
   "api_key": "cvwhagMY6q45ci01n6ayl5AnJJe34vdHhTUbhjFO",
-  "bracket_code": "austinmelee-kam7singles",
+  "bracket_code": "austinmelee-austinarcadian1dubs",
   "output_path": "labels/",
   "slippi_path": "slippi/",
   "instructions": {
@@ -95,10 +95,10 @@
       "member1PortImage": {
         "type": "image",
         "options": {
-          "Port 1": "./ports/1.png",
-          "Port 2": "./ports/2.png",
-          "Port 3": "./ports/3.png",
-          "Port 4": "./ports/4.png"
+          "Port 1": "./doublesports/1.png",
+          "Port 2": "./doublesports/2.png",
+          "Port 3": "./doublesports/3.png",
+          "Port 4": "./doublesports/4.png"
         }
       },
       "member1Port": {
@@ -109,10 +109,10 @@
       "member2PortImage": {
         "type": "image",
         "options": {
-          "Port 1": "./ports/1.png",
-          "Port 2": "./ports/2.png",
-          "Port 3": "./ports/3.png",
-          "Port 4": "./ports/4.png"
+          "Port 1": "./doublesports/1.png",
+          "Port 2": "./doublesports/2.png",
+          "Port 3": "./doublesports/3.png",
+          "Port 4": "./doublesports/4.png"
         }
       },
       "member2Port": {
