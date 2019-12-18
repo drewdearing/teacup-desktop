@@ -5,6 +5,7 @@ const path = require('path')
 const { default: SlippiGame } = require('slp-parser-js')
 const chokidar = require('chokidar')
 const _ = require('lodash')
+//const concat = require('ffmpeg-concat')
 
 const gameByPath = {}
 
@@ -46,6 +47,10 @@ var user = null
 var key = null
 var label_path = null
 var slp_path = null
+var replay_prefix = null
+var highlight_path = null
+var replay_path = null
+var vod_path = null
 var cwd = null
 var instructions = null
 var socket = null
@@ -80,6 +85,10 @@ fs.readJson(settingsFile, function(err, settingsData) {
         label_path = label_path.replace(/\/?$/, '/')
         fs.ensureDir(label_path, err => {
             if(!err){
+                replay_prefix = settings.replay_prefix
+                highlight_path = cwd + settings.highlight_path.replace(/^\/+/g, '')
+                replay_path = cwd + settings.replay_path.replace(/^\/+/g, '')
+                vod_path = cwd + settings.vod_path.replace(/^\/+/g, '')
                 slp_path = settings.slippi_path.replace(/^\/+/g, '')
                 slp_path = cwd + slp_path
                 slp_path = slp_path.replace(/\/?$/, '/')
@@ -217,7 +226,19 @@ async function verifyBracket(id, user, key){
 }
 
 async function handleLabelUpdate(nextMatch){
+    var currentMatch = bracketData.currentMatch
+    var currentMatchNull = currentMatch == null || currentMatch.match_id == null
+    var nextMatchNull = nextMatch == null || nextMatch.match_id == null
+    var nextMatchIsSame = !currentMatchNull && !nextMatchNull && nextMatch.match_id == currentMatch.match_id
+    var nextMatchThisMatch = currentMatchNull ? nextMatchNull : nextMatchIsSame
+
+    if(!currentMatchNull && !nextMatchThisMatch){
+        console.log("creating replays")
+        generateReplays()
+    }
+
     bracketData.currentMatch = nextMatch
+
     if(nextMatch != null && nextMatch.match_id != null){
         let round = nextMatch.round
         let round_file = label_path + 'round.txt'
@@ -245,6 +266,66 @@ async function handleLabelUpdate(nextMatch){
             }
         })
         setGameSettings()
+    }
+}
+
+/*async function generateReplays(){
+    try {
+        await fs.ensureDir(vod_path)
+        await fs.ensureDir(replay_path)
+        await fs.ensureDir(highlight_path)
+        fs.readdir(vod_path, async (err, items) => {
+            let src = []
+            let dest = []
+            for (var i=0; i<items.length; i++) {
+                var item = items[i]
+                if(item.startsWith(replay_prefix)){
+                    src.push(path.join(vod_path, item))
+                    dest.push(path.join(replay_path, item))
+                }
+            }
+            await concat({
+                output: path.join(highlight_path, "replay.mp4"),
+                videos: src,
+                transition: {
+                    name: 'fade',
+                    duration: 300
+                }
+            })
+            for(var i = 0; i < src.length; i++) {
+                fs.move(src[i], dest[i])
+            }
+        })
+    } catch (err) {
+        console.error(err)
+    }
+}*/
+
+async function generateReplays(){
+    try {
+        await fs.ensureDir(vod_path)
+        await fs.ensureDir(replay_path)
+        await fs.ensureDir(highlight_path)
+        fs.readdir(replay_path, (err, replayitems) => {
+            for (var i = 0; i < replayitems.length; i++) {
+                var replay = replayitems[i]
+                var replaysrc = path.join(replay_path, replay)
+                var replaydest = path.join(highlight_path, replay)
+                fs.move(replaysrc, replaydest)
+            }
+            fs.readdir(vod_path, (err, voditems) => {
+                for (var i = 0; i < voditems.length; i++) {
+                    var item = voditems[i]
+                    if(item.startsWith(replay_prefix)){
+                        var src = path.join(vod_path, item)
+                        var dest = path.join(replay_path, item)
+                        fs.move(src, dest)
+                    }
+                }
+            })
+        })
+    } catch (err) {
+        console.error(err)
     }
 }
 

@@ -4,6 +4,10 @@
   "bracket_code": "austinmelee-austinarcadian1dubs",
   "output_path": "labels/",
   "slippi_path": "slippi/",
+  "vod_path": "vods/",
+  "replay_path": "replays/",
+  "highlight_path": "highlights/",
+  "replay_prefix": "Replay",
   "instructions": {
     "member1Character": {
       "member1CharacterImage": {

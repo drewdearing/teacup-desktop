@@ -14,6 +14,9 @@ yarn-error.log*
 /images
 /labels
 /slippi
+/highlights
+/vods
+/replays
 
 #node
 /node_modules

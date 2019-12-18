@@ -11,9 +11,11 @@
   "license": "ISC",
   "dependencies": {
     "chokidar": "^3.0.2",
+    "ffmpeg-concat": "^1.0.14",
     "fs-extra": "^8.0.1",
     "lodash": "^4.17.15",
     "request": "^2.88.0",
+    "sharp": "^0.23.4",
     "slp-parser-js": "^3.0.0",
     "socket.io-client": "^2.2.0"
   }
