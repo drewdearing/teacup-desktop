@@ -16,7 +16,11 @@ yarn-error.log*
 /settings.json
 /images
 /labels
+/highlights
+/vods
+/replays
 
 #node
 /node_modules
 teacup_desktop.spec
+/build
