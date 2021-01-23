@@ -43,7 +43,7 @@ Now, four name files will be written:
 4. 'anotherNameLabel1.txt' -> 'player 2'
 
 If you want to add images in association with a label, you will need to add an object of type 'image'.
-
+```
 "name": {
 	"nameLabel": {
 		"type": "text"
@@ -59,7 +59,7 @@ If you want to add images in association with a label, you will need to add an o
 		}
 	}
 }
-
+```
 You'll notice that image objects require options.
 Options define which values are associated with which image.
 
@@ -68,7 +68,3 @@ teaCup will make a copy of 'images/names/tom.png' and write it 'nameImage0.png'
 
 
 This should be all you need to know to get the most out of teaCup!
-
-/Users/drewdearing/Desktop/dev/teaCup/desktop/index.js
-/Users/drewdearing/Desktop/dev/teaCup/desktop
-/usr/local/bin
