@@ -45,19 +45,19 @@ Now, four name files will be written:
 If you want to add images in association with a label, you will need to add an object of type 'image'.
 ```
 "name": {
-	"nameLabel": {
-		"type": "text"
-	},
-	"anotherNameLabel": {
-		"type": "text"
-	},
-	"nameImage": {
-		"type": "image",
-		"options": {
-			"tom": "images/names/tom.png",
-			"jerry": "images/names/jerry.png"
-		}
-	}
+    "nameLabel": {
+        "type": "text"
+    },
+    "anotherNameLabel": {
+        "type": "text"
+    },
+    "nameImage": {
+        "type": "image",
+        "options": {
+            "tom": "images/names/tom.png",
+            "jerry": "images/names/jerry.png"
+        }
+    }
 }
 ```
 You'll notice that image objects require options.
